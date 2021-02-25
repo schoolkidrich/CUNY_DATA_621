@@ -1,0 +1,68 @@
+---
+title: "Data621 Homework One"
+author: "Stephen Haslett"
+date: "2/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Disable scientific numbers.
+options(scipen = 999)
+
+# Load required libraries.
+library(skimr)
+library(knitr)
+library(ggplot2)
+library(tidyverse)
+```
+
+
+
+```{r dataImport}
+# Pull in the training data.
+mb_training_data <- read.csv('moneyball-training-data.csv', header = TRUE)
+
+# Remove the INDEX variable as it is of no value in the data evaluation.
+mb_training_data <- mb_training_data %>% 
+  dplyr::select(-INDEX)
+```
+
+### Summary Stats
+
+```{r dataExploration}
+summary(mb_training_data)
+```
+
+Variables with missing values:
+TEAM_BATTING_SO 102
+TEAM_PITCHING_SO 102
+TEAM_BASERUN_SB 131
+TEAM_FIELDING_DP 286
+TEAM_BASERUN_CS 772
+TEAM_BATTING_HBP 2085
+
+
+### Variable Distributions
+
+```{r dataDistributions, fig.height = 10, fig.width = 10, error=FALSE, warning=FALSE}
+distribution_data <- mb_training_data %>%
+  gather(key = 'variable_name', value = 'value')
+
+ggplot(distribution_data) + 
+  geom_histogram(aes(x = value, y = ..density..), bins = 30) + 
+  geom_density(aes(x = value), color = 'red') +
+  facet_wrap(. ~ variable_name, scales = 'free', ncol = 4)
+```
+
+
+### Data Models
+
+```{r dataModel}
+
+```
+
+
+
+
+
