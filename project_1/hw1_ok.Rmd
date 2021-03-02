@@ -1,0 +1,195 @@
+---
+title: "project 1"
+author: "Orli Khaimova"
+date: "2/24/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(corrplot)
+library(ggplot2)
+library(tidyverse)
+library(magrittr)
+library(Hmisc)
+```
+
+```{r}
+moneyball <- read.csv("https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-training-data.csv") 
+```
+
+### Data Exploration
+
+The following variables have missing data:
+* TEAM_BATTING_HBP, 2085
+* TEAM_BASERUN_CS, 772
+* TEAM_FIELDING_DP, 286
+* TEAM_BASERUN_SB, 131
+* TEAM_BATTING_SO, 102
+* TEAM_PITCHING_SO, 102
+
+```{r}
+summary(moneyball)
+
+#corr_data <- cor(moneyball, use = "pairwise.complete.obs")
+#round(corr_data,2)
+
+corr_data<- rcorr(as.matrix(moneyball))
+corr_p <- round(corr2$P,4)
+
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+    )
+}
+
+sorted_cor <- flattenCorrMatrix(corr_data$r, corr_data$P) %>%
+   arrange(desc(abs(cor)))
+
+corrplot(corr_data$r, type = "upper", order = "hclust", tl.col = "black")
+
+moneyball %>%
+  gather(variable, value, TARGET_WINS:TEAM_FIELDING_DP) %>%
+  ggplot(., aes(x= variable, y=value)) + 
+  geom_boxplot() +
+  facet_wrap(~variable, scales ="free", ncol = 4) +
+  labs(x = element_blank(), y = element_blank())
+```
+
+### Data Preparation
+
+* Created TEAM_BATTING_1B, singles by batters
+* removed TEAM_BATTING_HBP, imputing with mean/mode gave high P value
+
+```{r}
+moneyball <- moneyball %>% 
+  mutate(TEAM_BATTING_1B = TEAM_BATTING_H - TEAM_BATTING_2B - TEAM_BATTING_3B - TEAM_BATTING_HR) %>%
+  dplyr::select(-c("TEAM_BATTING_HBP"))
+  
+test <- moneyball %>%
+  select(TEAM_BATTING_HBP) %>%
+  mutate(TEAM_BATTING_HBP = )
+
+
+#TEAM_BATTING_HBP = ifelse(is.na(TEAM_BATTING_HBP), mean(moneyball$TEAM_BATTING_HBP, na.rm = TRUE),TEAM_BATTING_HBP)
+
+
+test <- moneyball %>%
+  select(c("TEAM_PITCHING_HR","TEAM_BATTING_HR")) %>%
+  mutate(difference = TEAM_PITCHING_HR-TEAM_BATTING_HR)
+```
+
+### Build Models
+
+```{r}
+
+```
+
+
+
+
+
+```{r}
+#highest model was with team_batting_hbp included, prior to na
+
+#Removed: TEAM_BATTING_H (no diff to model)
+model1 <- lm(TARGET_WINS ~   TEAM_BATTING_2B + TEAM_BATTING_3B + 
+              TEAM_BATTING_HR + TEAM_BATTING_BB  + TEAM_BATTING_SO +TEAM_BASERUN_SB +  
+              TEAM_BASERUN_CS + TEAM_PITCHING_H + TEAM_PITCHING_HR + 
+              TEAM_PITCHING_BB + TEAM_PITCHING_SO + TEAM_FIELDING_E + TEAM_FIELDING_DP +
+              TEAM_BATTING_1B, moneyball)
+
+summary(model1)
+
+plot(fitted(model1), resid(model), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model1), col = "dodgerblue", lwd = 2)
+```
+
+```{r}
+#took log, .4295
+#removed TEAM_BATTING_SB, .4299
+#removed TEAM_PITCHING_HR, .4302
+# removed TEAM_BATTING_SO, .4305
+model2 <- lm(log(TARGET_WINS) ~   TEAM_BATTING_2B + TEAM_BATTING_3B + 
+              TEAM_BATTING_HR + TEAM_BATTING_BB +TEAM_BASERUN_SB +  
+              TEAM_BASERUN_CS + TEAM_PITCHING_H + 
+              TEAM_PITCHING_SO + TEAM_FIELDING_E + TEAM_FIELDING_DP +
+              TEAM_BATTING_1B, moneyball)
+
+summary(model2)
+
+plot(fitted(model2), resid(model2), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model2), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model2), col = "dodgerblue", lwd = 2)
+```
+
+```{r}
+model3 <- lm(TARGET_WINS ~   TEAM_BATTING_2B + TEAM_BATTING_3B + 
+              TEAM_BATTING_HR + TEAM_BATTING_BB  +TEAM_BASERUN_SB +  
+              TEAM_BASERUN_CS + TEAM_PITCHING_H + 
+              TEAM_PITCHING_SO + TEAM_FIELDING_E + TEAM_FIELDING_DP +
+              TEAM_BATTING_1B, moneyball)
+summary(model3)
+
+MASS::boxcox(model3, lambda = seq(0.75, 1.6, by = 0.05), plotit = TRUE)
+
+model_cox = lm((((TARGET_WINS ^ 1.2) - 1) / 1.2) ~ TEAM_BATTING_2B + TEAM_BATTING_3B + 
+              TEAM_BATTING_HR + TEAM_BATTING_BB  +TEAM_BASERUN_SB +  
+              TEAM_BASERUN_CS + TEAM_PITCHING_H + 
+              TEAM_PITCHING_SO + TEAM_FIELDING_E + TEAM_FIELDING_DP +
+              TEAM_BATTING_1B, moneyball)
+
+summary(model_cox)
+
+plot(fitted(model_cox), resid(model_cox), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model_cox), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model_cox), col = "dodgerblue", lwd = 2)
+```
+
+```{r}
+model4 <- lm(TARGET_WINS ~   TEAM_BATTING_2B + TEAM_BATTING_3B + 
+              I( TEAM_PITCHING_HR / TEAM_BATTING_HR) +  
+              TEAM_BASERUN_CS + TEAM_PITCHING_H + TEAM_BASERUN_SB +
+              TEAM_PITCHING_BB + TEAM_PITCHING_SO + TEAM_FIELDING_E + TEAM_FIELDING_DP +
+              TEAM_BATTING_1B, moneyball)
+summary(model4)
+
+plot(fitted(model4), resid(model4), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model4), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model4), col = "dodgerblue", lwd = 2)
+```
+
+
+```{r}
+model5 <- lm(TARGET_WINS ~ TEAM_BATTING_1B + TEAM_BATTING_2B + TEAM_BATTING_3B + 
+               I(TEAM_PITCHING_HR*TEAM_BATTING_HR) + TEAM_BATTING_BB + TEAM_FIELDING_E +
+               TEAM_BASERUN_SB + I(1/TEAM_FIELDING_DP) + TEAM_PITCHING_SO +
+               I(TEAM_BASERUN_CS ^ 3), moneyball)
+
+summary(model5)
+
+plot(fitted(model5), resid(model5), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model5), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model5), col = "dodgerblue", lwd = 2)
+```
+
+
+
+
+
+
