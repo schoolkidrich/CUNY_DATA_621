@@ -90,7 +90,6 @@ str(moneyball_training)
 # computing correlation matrix
 corr <- round(cor(moneyball_training), digits = 1)
 
-
 corrplot(corr, type = 'upper', addCoef.col = 'black', tl.col = 'black', tl.srt = 45)
 ```
 
@@ -337,13 +336,11 @@ moneyball_test <- cbind(moneyball_test[1], moneyball_test[14], moneyball_test[2:
 str(moneyball_test)
 ```
 
-```{r}
-test_data <- predict(lm5, newdata = moneyball_test, interval = 'prediction')
-summary(test_data)
-```
+
 
 
 ```{r}
+# Predicting Wins and ooking at the distribution 
 moneyball_test$prediction <- predict(lm5, type = 'response', newdata = moneyball_test)
 
 ggplot(data = moneyball_test, aes(x = prediction))  +
@@ -354,6 +351,12 @@ ggplot(data = moneyball_test, aes(x = prediction))  +
                  label = str_replace_all(toString(summary(moneyball_test['prediction'])), ',', '\n')
                  )) +
   labs(title = 'Wins Prediction Histogram Plot', y = 'Count', x = 'Wins Prediction')
+```
+
+```{r}
+# creating a table of prediction and confidence intervals
+test_data <- predict(lm5, newdata = moneyball_test, interval = 'prediction')
+summary(test_data)
 ```
 
 
