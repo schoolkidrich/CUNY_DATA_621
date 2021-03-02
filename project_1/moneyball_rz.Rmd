@@ -1,0 +1,86 @@
+---
+title: "project_1"
+author: "Richard"
+date: "2/22/2021"
+output: html_document
+---
+# Importing packages
+
+```{r}
+library(tidyverse)
+```
+#loading dataset
+
+```{r}
+url = "https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-training-data.csv"
+training = read.csv(url)
+head(training)
+```
+# summary
+```{r}
+summary(training)
+```
+# Drop columns/ NA
+
+```{r}
+sub = subset(training, select = -c(TEAM_BATTING_HBP,TEAM_BASERUN_CS))
+wins = sub$TARGET_WINS
+sub = sub[wins[wins>summary(wins)[2]& wins<summary(wins)[5]],]
+boxplot(sub$TARGET_WINS)
+```
+# New Columns
+
+```{r}
+sub$hr_hitting_ratio = sub$TEAM_BATTING_HR/sub$TEAM_BATTING_H
+sub$hr_pitching_ratio = sub$TEAM_PITCHING_HR/sub$TEAM_PITCHING_H
+```
+
+#Replacing Remaining NA with mean
+
+```{r}
+get_mean = function(df,column){
+  string = summary(df[column])[4]
+  mean = as.numeric(unlist(strsplit(string,"[:]"))[2])
+  return (mean)
+}
+
+columns = names(sub)
+has_na = columns[apply(sub,2,anyNA)]
+for (var in has_na){
+  x = sub[var]
+  x[is.na(x)] = get_mean(sub,var)
+  sub[var] = x
+}
+
+num_col = dim(sub)[2]
+wins = columns[2]
+variables = columns[3:num_col]
+
+corr = c()
+for (variable in variables){
+  corr= c(corr,cor(sub[wins],sub[variable]))
+}
+
+correlation = data.frame(matrix(c(variables,corr),ncol = 2))
+names(correlation) = c("variable","correlation")
+correlation
+```
+# LM
+```{r}
+sub$hr_hitting_ratio = log(sub$hr_hitting_ratio)
+sub$hr_pitching_ratio = log(sub$hr_pitching_ratio)
+sub$TEAM_BATTING_HR = log(sub$TEAM_BATTING_HR)
+sub$TEAM_PITCHING_HR = log(sub$TEAM_PITCHING_HR)
+model1 = lm(TARGET_WINS~.-INDEX,sub)
+summary(model1)
+```
+# Hist + Boxplot
+
+```{r}
+for (column in names(sub[2:num_col])){
+  hist(sub[,column],main = paste("Distribution of", column))
+  boxplot(sub[,column,])
+}
+
+```
+
