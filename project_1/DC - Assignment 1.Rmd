@@ -306,11 +306,11 @@ ggplot(data = lm5) +
 
 
 ```{r}
-url2 <- 'https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-training-data.csv'
+url2 <- 'https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-evaluation-data.csv'
 
 moneyball_test <- read.csv(url2)
 
-moneyball_test <- moneyball_test[-c(1, 10, 11)]
+moneyball_test <- moneyball_test[-c(1, 9, 10)]
 
 # changing the column names
 
@@ -329,7 +329,10 @@ colnames(moneyball_test) <- c_names
 moneyball_test <- moneyball_test %>%
   mutate(B_1B = B_H - (B_2B + B_3B + B_HR))
 
-moneyball_test <- cbind(moneyball_test[1:2], moneyball_test[15], moneyball_test[3:14])
+
+str(moneyball_test)
+
+moneyball_test <- cbind(moneyball_test[1], moneyball_test[14], moneyball_test[2:13])
 
 str(moneyball_test)
 ```
@@ -343,21 +346,14 @@ summary(test_data)
 ```{r}
 moneyball_test$prediction <- predict(lm5, type = 'response', newdata = moneyball_test)
 
-summary(moneyball_test$prediction)
-
-
-moneyball_test <- moneyball_test %>%
-  mutate(pred_diff = WINS - prediction)
-
-
-ggplot(moneyball_test, aes(x = pred_diff)) + 
-  geom_histogram(color = 'black', fill =  'gray') +
-  geom_vline(aes(xintercept = mean(pred_diff)),
+ggplot(data = moneyball_test, aes(x = prediction))  +
+  geom_histogram( color = 'black', fill =  'gray') +
+  geom_vline(aes(xintercept = mean(prediction)),
              linetype = 'dashed', size = 2, color = 'blue') +
-  geom_label(aes(x = -25, y = 125,
-                 label = str_replace_all(toString(summary(moneyball_test['pred_diff'])), ',', '\n')
+  geom_label(aes(x = 55, y = 20,
+                 label = str_replace_all(toString(summary(moneyball_test['prediction'])), ',', '\n')
                  )) +
-  labs(title = 'Double Plays Histogram Plot', y = 'Count', x = 'Double Plays')
+  labs(title = 'Wins Prediction Histogram Plot', y = 'Count', x = 'Wins Prediction')
 ```
 
 
