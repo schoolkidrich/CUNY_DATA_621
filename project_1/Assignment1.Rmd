@@ -1,0 +1,466 @@
+---
+title: "Moneyball: DATA621 Project #1"
+author: "Team 2"
+date: "2/24/2021"
+output: 
+  html_document:
+    toc: true
+    number_sections: true
+    theme: united
+    highlight: tango
+    code_folding: show
+---
+
+## Introduction
+
+* Data
+* Purpose of Analysis
+* Method?
+
+## Setup
+
+This analysis requires installation of `tidyverse`,`corrplot`, and `reshape2`.
+
+```{r pckgs, echo=FALSE}
+library(tidyverse)
+require(reshape2)
+require(corrplot)
+```
+
+### Load Raw Data
+
+The data has been divided in advance into a training set, `training_raw`, and a test set, `test_raw`. We will load both data sets and perform exploratory data analysis on the training set, only.
+
+```{r load_data}
+url1 = "https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-training-data.csv"
+url2 = "https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-evaluation-data.csv"
+
+training_raw = read_csv(url1)
+test_raw=read_csv(url2)
+
+head(training_raw)
+```
+
+First, rename the columns to be more human-readable and drop INDEX, which has no meaning.
+
+```{r rename}
+
+training <- training_raw %>%
+  select(-INDEX) %>%
+  rename_with(~ gsub("TEAM_", "", .x)) %>%
+  rename_with(stringr::str_to_title) %>%
+  dplyr::rename(
+    Wins = Target_wins,
+    Hits = Batting_h,
+    Doubles = Batting_2b,
+    Triples = Batting_3b,
+    HomeRuns = Batting_hr,
+    Walks_AtBat = Batting_bb,
+    StrikeOuts_AtBat = Batting_so,
+    BasesStolen = Baserun_sb,
+    OutStealingBases = Baserun_cs,
+    Hits_Allowed = Pitching_h,
+    HitByPitch_AtBat = Batting_hbp,
+    Errors = Fielding_e,
+    HomeRuns_Allowed = Pitching_hr,
+    Walks_Allowed = Pitching_bb,
+    StrikeOuts = Pitching_so,
+    DoublePlays = Fielding_dp
+  )
+    
+colnames(training)  
+ 
+```
+
+Second, we will add a variable called singles.
+
+```{r}
+training <- training %>% mutate(Singles = Hits - HomeRuns - Doubles - Triples)
+```
+
+``` {r histograms}
+long <- training %>% as.data.frame() %>% melt
+long %>%
+  ggplot(aes(x=value)) + 
+  geom_histogram() + 
+  facet_wrap(~variable, scales='free')
+
+long %>%
+  ggplot(aes(x=value)) + 
+  geom_boxplot() + 
+  facet_wrap(~variable, scales='free')
+```
+
+```{r}
+
+# removing index column
+# how to handle NA values? TEAM_BATTING_HBP has 2085 NA values and TEAM_BASERUN_CS has 772
+# removing them for now
+# listwise deletion of missing values
+
+#moneyball_training <- na.omit(moneyball_training[-c(1, 10, 11)])
+
+# 
+# # removing outliers <- I think this may be too agressive (Alice)
+# out_ind <- c()
+# outliers <- c()
+# 
+# for (i in 1:ncol(training)){
+#   
+#   out <- boxplot.stats(training[, i])$out
+#   outliers <- append(outliers, out)
+#   out_ind <- append(out_ind, which(training[, i] %in% c(out)))
+#   
+# }
+# 
+# # to see the outliers
+# # cbind(outliers, moneyball_training[out_ind,])
+# 
+# # removing the outliers
+# # moneyball_training <- moneyball_training[-out_ind, ]
+# 
+# # changing the column names to be more human readable
+# 
+# 
+# 
+# 
+# str(moneyball_training)
+```
+
+
+
+
+
+## Including Plots
+
+
+```{r}
+# computing correlation matrix
+corr <- round(cor(training), digits = 1)
+
+corrplot(corr, type = 'upper', addCoef.col = 'black', tl.col = 'black', tl.srt = 45)
+```
+## Feature Selection
+We should drop highly correlated values, but which ones to drop?
+
+Using our understanding of baseball, we can also tell which features are highly correlated because they are in fact calculated from a common statistic (e.g. Runs Hit, and Double Hit both include how many doubles were hit!) versus variables which are correlated in fact but not in function (e.g. Runs Allowed Pitcher vs Runs Allowed Field -- this is a measure of the picthing staff versus the batting so while these tend to be similar they are in fact measuring the skill of different players at different points in the game.)
+
+Oddly, although pitching hits and pitching homeruns are likewise connecting in the real world, they are negatively correlated at just the 0.1 value in the data.
+
+Because Team Batting Hits includes the data from singles, double, triples and home runs, it might sense to drop Team Batting Hits and add a new variable -- Team Batting Singles
+
+```{r}
+
+```
+
+
+
+
+
+
+```{r eval=FALSE}
+#re-factoring
+
+FancyHist <- function(field, title){
+  ggplot(data = moneyball_training, aes(x = get(field)))  +
+    geom_histogram( color = 'black', fill =  'gray') + 
+    geom_vline(aes(xintercept = mean(get(field))),
+               linetype = 'dashed', size = 2, color = 'blue') +
+    #geom_label(aes(x = 50, y = 125, 
+    #               label = str_replace_all(toString(summary(moneyball_training['WINS'])), ',', '\n')
+    #               )) +
+    labs(title = title, y = 'Count', x=field)
+}
+
+FancyHist('WINS', "Wins")
+
+#Hits
+ggplot(data = moneyball_training, aes(x = B_H))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(B_H)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 1250, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['B_H'])), ',', '\n')
+                 )) +
+  labs(title = 'Base Hits Histogram Plot', y = 'Count', x = 'Base Hits')
+
+# Doubles
+ggplot(data = moneyball_training, aes(x = B_2B))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(B_2B)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 160, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['B_2B'])), ',', '\n')
+                 )) +
+  labs(title = 'Doubles Histogram Plot', y = 'Count', x = 'Doubles')
+
+
+# Triples
+ggplot(data = moneyball_training, aes(x = B_3B))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(B_3B)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 75, y = 130, 
+                 label = str_replace_all(toString(summary(moneyball_training['B_3B'])), ',', '\n')
+                 )) +
+  labs(title = 'Triples Histogram Plot', y = 'Count', x = 'Triples')
+
+
+# Homeruns
+ggplot(data = moneyball_training, aes(x = B_HR))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(B_HR)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 25, y = 90, 
+                 label = str_replace_all(toString(summary(moneyball_training['B_HR'])), ',', '\n')
+                 )) +
+  labs(title = 'Homeruns Histogram Plot', y = 'Count', x = 'Homeruns')
+
+
+# Walks
+ggplot(data = moneyball_training, aes(x = B_BB))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(B_BB)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 380, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['B_BB'])), ',', '\n')
+                 )) +
+  labs(title = 'Walks Histogram Plot', y = 'Count', x = 'Walks')
+
+
+# Strike Out by Batters
+ggplot(data = moneyball_training, aes(x = B_SO))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(B_SO)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 380, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['B_SO'])), ',', '\n')
+                 )) +
+  labs(title = 'Strike Out by Batters Histogram Plot', y = 'Count', x = 'Strike Out by Batters')
+
+
+# Stolen Bases
+ggplot(data = moneyball_training, aes(x = BR_SB))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(BR_SB)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 200, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['BR_SB'])), ',', '\n')
+                 )) +
+  labs(title = 'Stolen Bases Histogram Plot', y = 'Count', x = 'Stolen Bases')
+
+
+# Hits Allowed
+ggplot(data = moneyball_training, aes(x = P_H))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(P_H)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 1250, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['P_H'])), ',', '\n')
+                 )) +
+  labs(title = 'Hits Allowed Histogram Plot', y = 'Count', x = 'Hits Allowed')
+
+
+# Homeruns Allowed
+ggplot(data = moneyball_training, aes(x = P_HR))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(P_HR)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 30, y = 90, 
+                 label = str_replace_all(toString(summary(moneyball_training['P_HR'])), ',', '\n')
+                 )) +
+  labs(title = 'Homeruns Allowed Histogram Plot', y = 'Count', x = 'Homeruns Allowed')
+
+
+# Walks Allowed
+ggplot(data = moneyball_training, aes(x = P_BB))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(P_BB)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 375, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['P_BB'])), ',', '\n')
+                 )) +
+  labs(title = 'Walks Allowed Histogram Plot', y = 'Count', x = 'Walks Allowed')
+
+
+# Strikeouts by Pitchers
+ggplot(data = moneyball_training, aes(x = P_SO))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(P_SO)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 425, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['P_SO'])), ',', '\n')
+                 )) +
+  labs(title = 'Strikeouts by Pitchers Histogram Plot', y = 'Count', x = 'Strikeouts by Pitchers')
+
+
+# Errors
+ggplot(data = moneyball_training, aes(x = F_E))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(F_E)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 225, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['F_E'])), ',', '\n')
+                 )) +
+  labs(title = 'Errors Histogram Plot', y = 'Count', x = 'Errors')
+
+# Double Plays
+ggplot(data = moneyball_training, aes(x = F_DP))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(F_DP)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 110, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['F_DP'])), ',', '\n')
+                 )) +
+  labs(title = 'Double Plays Histogram Plot', y = 'Count', x = 'Double Plays')
+
+```
+
+To see what has the biggest impact on the results, we can evaluate the absolute value of the correlation of every feature.
+
+```{r correlation}
+# adapted from https://www.kaggle.com/reisel/how-to-handle-correlated-features
+
+#start with field names
+features <- training %>% select(-Wins) %>% names()
+
+#initiate blank data frame
+corr_coefs<- data.frame(feature = features, coef = rep(NA, length(features)))
+
+#for every feature, calculate the correlation with the target, "Wins"
+i <- 1
+for (feature in features){
+  df <- training[, c(feature, "Wins")] %>% na.omit() #omit NAs for each feature
+  corr_coefs$coef[i] <- abs(cor(df[, feature], df$Wins))
+  # print(feature)
+  # print(i)
+  # print(corr_coefs$coef[i])
+  i <- i + 1
+}
+
+# sort by correlation coefficient
+corr_coefs<- corr_coefs[order(corr_coefs$coef, decreasing = TRUE), ]
+
+ggplot(corr_coefs, aes(x = factor(feature, levels = feature), y = coef)) + 
+    geom_bar(stat = "identity") + 
+    coord_flip() + 
+    xlab("Feature") + 
+    ylab("Correlation Coefficient")
+```
+
+## Model Testing
+
+Then we can test some models
+```{r}
+lm_original <- lm(Wins ~ . -Singles, data = training)
+summary(lm_original)
+```
+```{r}
+lm_all <- lm(Wins ~ . - Hits, data = training) 
+summary(lm_all)
+```
+
+These produce pretty identica results. Maybe this is why Singles aren't tracked!
+
+Let's drop the least correlated feature.
+```{r}
+test <- function(droplist, data=training){
+  df <- data %>% select(-all_of(droplist))
+  lm <- lm(Wins ~ . , df) 
+  # 
+  # print("Features Dropped")
+  # print(droplist)
+
+  print("R Squared")
+  print(summary(lm)$adj.r.squared)
+
+    # print("p value")
+  # f <- summary(lm)$fstatistic
+  # p <- pf(f[1],f[2],f[3],lower.tail=F)
+  # attributes(p) <- NULL
+  # print(p)
+  return(summary(lm)$adj.r.squared)
+}
+
+droplist <- c()
+Rs <- c()
+for (feature in corr_coefs$feature) {
+  droplist <- append(droplist, feature)
+  Rs <- append(Rs, test(droplist))
+}
+
+Rs
+  
+```
+
+The 5th round is slightly better than the 1st 4, but not by much.
+
+Can we try removing the features with the lowest p-values?
+
+```{r}
+features2 <- summary(lm_all)$coefficients %>% data.frame %>% arrange(desc(Pr...t..))
+features2
+```
+
+```{r}
+test(c("StrikeOuts_AtBat", "StrikeOuts"))
+```
+
+## Removing Outliers
+
+```{r}
+# removing outliers
+out_ind <- c()
+outliers <- c()
+
+for (col in names(training)){
+  
+  out <- boxplot.stats(training[, col])$out
+  outliers <- append(outliers, out)
+  out_ind <- append(out_ind, which(training[, col] %in% c(out)))
+  
+}
+
+# to see the outliers
+# cbind(outliers, moneyball_training[out_ind,])
+
+# removing the outliers
+training_mod <- raining[-out_ind, ]
+```
+
+```{r}
+lm2 <- lm(Wins ~ . -HomeRuns, data = training)
+summary(lm2)
+
+lm3 <- lm(Wins ~ . -HomeRuns -StrikeOuts_AtBat, data = training)
+summary(lm3)
+
+lm4 <- lm(Wins ~ . -HomeRuns -StrikeOuts_AtBat -Doubles, data = training)
+summary(lm4)
+
+# I've gone too far R-Squared has gone down
+```
+
+```{r}
+
+ggplot(data = lm2, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_smooth(se = FALSE) +
+  xlab("Fitted values") +
+  ylab("Residuals")
+
+
+ggplot(data = lm2, aes(x = .resid)) +
+  geom_histogram() +
+  xlab("Residuals")
+
+
+ggplot(data = lm2) + 
+  stat_qq(aes(sample = .stdresid)) +
+  geom_abline()
+```
+
+## References
+
+https://www.kaggle.com/reisel/how-to-handle-correlated-features
