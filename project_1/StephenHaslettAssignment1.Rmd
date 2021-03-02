@@ -15,6 +15,10 @@ library(skimr)
 library(knitr)
 library(ggplot2)
 library(tidyverse)
+library(kableExtra)
+library(caret)
+library(Hmisc)
+library(gtsummary)
 ```
 
 
@@ -31,16 +35,27 @@ mb_training_data <- mb_training_data %>%
 ### Summary Stats
 
 ```{r dataExploration}
+# Remove the prefix "TEAM_" from variable names to make them more readable.
+names(mb_training_data) <- names(mb_training_data) %>% 
+    str_replace_all('TEAM_', '')
+
+# Summarize the data.
 summary(mb_training_data)
 ```
 
-Variables with missing values:
-TEAM_BATTING_SO 102
-TEAM_PITCHING_SO 102
-TEAM_BASERUN_SB 131
-TEAM_FIELDING_DP 286
-TEAM_BASERUN_CS 772
-TEAM_BATTING_HBP 2085
+
+### Missing Data
+
+```{r missingDataPercentages, echo=FALSE}
+# Create a table of variables sorted by percentage of missing data. 
+missing_data <- colSums(mb_training_data %>% sapply(is.na))
+percentage_missing <- round(missing_data / nrow(mb_training_data) * 100, 2)
+missing_values_table <- sort(percentage_missing, decreasing = TRUE)
+
+missing_values_table %>%
+  kable(caption = 'Breakdown of Variables by Percentage of Missing Data') %>%
+  kable_styling()
+```
 
 
 ### Variable Distributions
@@ -54,6 +69,23 @@ ggplot(distribution_data) +
   geom_density(aes(x = value), color = 'red') +
   facet_wrap(. ~ variable_name, scales = 'free', ncol = 4)
 ```
+
+#### Correlation Table
+
+```{r correlationTable}
+# Perform a correlation analysis on the data. In this analysis, we are only interested in the
+# correlation of the predicter variables and the "TARGET_WINS" variable.
+correlation_table <- cor(mb_training_data, method = 'pearson', use = 'complete.obs')[,1]
+
+# Remove the TARGET_WINS variable from the correlation table as it is redundant
+# within the context of of our correlation analysis.
+correlation_table <- correlation_table[-c(1)]
+
+correlation_table %>%
+  kable(caption = 'Correlation of Variables to TARGET_WINS') %>%
+  kable_styling()
+```
+
 
 
 ### Data Models
