@@ -1,0 +1,278 @@
+---
+title: "DATA 621 - Assignment 1"
+author: "Diego Correa"
+date: "2/22/2021"
+output: html_document
+---
+
+
+
+```{r}
+library(ggplot2)
+library(tidyverse)
+library(corrplot)
+```
+
+
+
+```{r}
+# url to csv file
+url <- 'https://github.com/Jagdish16/CUNY_DATA_621/raw/main/project_1/moneyball-training-data.csv'
+
+# creating dataframe from csv
+moneyball_training <- read.csv(url)
+
+# number of column and rows and data types
+str(moneyball_training)
+
+# mean, median, range, missing values
+summary(moneyball_training)
+```
+
+```{r}
+# removing index column
+# how to handle NA values? TEAM_BATTING_HBP has 2085 NA values and TEAM_BASERUN_CS has 772
+# removing them for now
+# listwise deletion of missing values
+
+moneyball_training <- na.omit(moneyball_training[-c(1, 10, 11)])
+
+
+# removing outliers
+out_ind <- c()
+outliers <- c()
+
+for (i in 1:ncol(moneyball_training)){
+  
+  out <- boxplot.stats(moneyball_training[, i])$out
+  outliers <- append(outliers, out)
+  out_ind <- append(out_ind, which(moneyball_training[, i] %in% c(out)))
+  
+}
+
+# to see the outliers
+# cbind(outliers, moneyball_training[out_ind,])
+
+# removing the outliers
+moneyball_training <- moneyball_training[-out_ind, ]
+
+# changing the column names
+
+c_names <- colnames(moneyball_training) %>% 
+  str_remove('TARGET_') %>%
+  str_remove('TEAM_') %>%
+  str_replace('BATTING', 'B') %>%
+  str_replace('PITCHING', 'P') %>% 
+  str_replace('BASERUN', 'BR') %>%
+  str_replace('FIELDING', 'F')
+
+colnames(moneyball_training) <- c_names
+
+
+str(moneyball_training)
+```
+
+
+
+
+
+## Including Plots
+
+
+```{r}
+# computing correlation matrix
+corr <- round(cor(moneyball_training), digits = 1)
+
+corrplot(corr, type = 'upper', addCoef.col = 'black', tl.col = 'black', tl.srt = 45)
+```
+```{r}
+# Wins
+ggplot(data = moneyball_training, aes(x = WINS))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(WINS)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 50, y = 125, 
+                 label = str_replace_all(toString(summary(moneyball_training['WINS'])), ',', '\n')
+                 )) +
+  labs(title = 'Wins Histogram Plot', y = 'Count', x = 'Wins')
+
+#Hits
+ggplot(data = moneyball_training, aes(x = B_H))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(B_H)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 1250, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['B_H'])), ',', '\n')
+                 )) +
+  labs(title = 'Base Hits Histogram Plot', y = 'Count', x = 'Base Hits')
+
+# Doubles
+ggplot(data = moneyball_training, aes(x = B_2B))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(B_2B)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 160, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['B_2B'])), ',', '\n')
+                 )) +
+  labs(title = 'Doubles Histogram Plot', y = 'Count', x = 'Doubles')
+
+
+# Triples
+ggplot(data = moneyball_training, aes(x = B_3B))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(B_3B)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 75, y = 130, 
+                 label = str_replace_all(toString(summary(moneyball_training['B_3B'])), ',', '\n')
+                 )) +
+  labs(title = 'Triples Histogram Plot', y = 'Count', x = 'Triples')
+
+
+# Homeruns
+ggplot(data = moneyball_training, aes(x = B_HR))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(B_HR)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 25, y = 90, 
+                 label = str_replace_all(toString(summary(moneyball_training['B_HR'])), ',', '\n')
+                 )) +
+  labs(title = 'Homeruns Histogram Plot', y = 'Count', x = 'Homeruns')
+
+
+# Walks
+ggplot(data = moneyball_training, aes(x = B_BB))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(B_BB)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 380, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['B_BB'])), ',', '\n')
+                 )) +
+  labs(title = 'Walks Histogram Plot', y = 'Count', x = 'Walks')
+
+
+# Strike Out by Batters
+ggplot(data = moneyball_training, aes(x = B_SO))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(B_SO)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 380, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['B_SO'])), ',', '\n')
+                 )) +
+  labs(title = 'Strike Out by Batters Histogram Plot', y = 'Count', x = 'Strike Out by Batters')
+
+
+# Stolen Bases
+ggplot(data = moneyball_training, aes(x = BR_SB))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(BR_SB)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 200, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['BR_SB'])), ',', '\n')
+                 )) +
+  labs(title = 'Stolen Bases Histogram Plot', y = 'Count', x = 'Stolen Bases')
+
+
+# Hits Allowed
+ggplot(data = moneyball_training, aes(x = P_H))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(P_H)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 1250, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['P_H'])), ',', '\n')
+                 )) +
+  labs(title = 'Hits Allowed Histogram Plot', y = 'Count', x = 'Hits Allowed')
+
+
+# Homeruns Allowed
+ggplot(data = moneyball_training, aes(x = P_HR))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(P_HR)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 30, y = 90, 
+                 label = str_replace_all(toString(summary(moneyball_training['P_HR'])), ',', '\n')
+                 )) +
+  labs(title = 'Homeruns Allowed Histogram Plot', y = 'Count', x = 'Homeruns Allowed')
+
+
+# Walks Allowed
+ggplot(data = moneyball_training, aes(x = P_BB))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(P_BB)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 375, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['P_BB'])), ',', '\n')
+                 )) +
+  labs(title = 'Walks Allowed Histogram Plot', y = 'Count', x = 'Walks Allowed')
+
+
+# Strikeouts by Pitchers
+ggplot(data = moneyball_training, aes(x = P_SO))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(P_SO)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 425, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['P_SO'])), ',', '\n')
+                 )) +
+  labs(title = 'Strikeouts by Pitchers Histogram Plot', y = 'Count', x = 'Strikeouts by Pitchers')
+
+
+# Errors
+ggplot(data = moneyball_training, aes(x = F_E))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(F_E)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 225, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['F_E'])), ',', '\n')
+                 )) +
+  labs(title = 'Errors Histogram Plot', y = 'Count', x = 'Errors')
+
+# Double Plays
+ggplot(data = moneyball_training, aes(x = F_DP))  +
+  geom_histogram( color = 'black', fill =  'gray') + 
+  geom_vline(aes(xintercept = mean(F_DP)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 110, y = 100, 
+                 label = str_replace_all(toString(summary(moneyball_training['F_DP'])), ',', '\n')
+                 )) +
+  labs(title = 'Double Plays Histogram Plot', y = 'Count', x = 'Double Plays')
+
+```
+
+
+```{r}
+lm1 <- lm(WINS ~ ., data = moneyball_training)
+summary(lm1)
+
+lm2 <- lm(WINS ~ . -B_HR, data = moneyball_training)
+summary(lm2)
+
+lm3 <- lm(WINS ~ . -B_HR -B_SO, data = moneyball_training)
+summary(lm3)
+
+lm4 <- lm(WINS ~ . -B_HR -B_SO -B_2B, data = moneyball_training)
+summary(lm4)
+
+# I've gone too far R-Squared has gone down
+```
+
+```{r}
+
+
+ggplot(data = lm2, aes(x = .fitted, y = .resid)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_smooth(se = FALSE) +
+  xlab("Fitted values") +
+  ylab("Residuals")
+
+
+ggplot(data = lm2, aes(x = .resid)) +
+  geom_histogram() +
+  xlab("Residuals")
+
+
+ggplot(data = lm2) + 
+  stat_qq(aes(sample = .stdresid)) +
+  geom_abline()
+```
+
