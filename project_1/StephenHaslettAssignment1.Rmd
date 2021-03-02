@@ -19,6 +19,8 @@ library(kableExtra)
 library(caret)
 library(Hmisc)
 library(gtsummary)
+library(rsample)
+library(asbio)
 ```
 
 
@@ -90,11 +92,47 @@ correlation_table %>%
 
 ### Data Models
 
-```{r dataModel}
+**Split the training dataset in two using an 80/20 ratio - mb_training_dataset, mb_testing_dataset**.
 
+```{r dataSplit}
+set.seed(4)
+mb_split_data <- initial_split(mb_training_data, 0.8)
+mb_training_dataset <- training(mb_split_data)
+mb_testing_dataset <- testing(mb_split_data)
+```
+
+#### Model 1
+
+Model 1 includes all variables in the dataset.
+
+```{r dataModelOne}
+model_one <- lm(TARGET_WINS ~ BATTING_H + BATTING_2B + BATTING_3B +
+                BATTING_HR + BATTING_BB + BATTING_SO + BASERUN_SB +
+                BASERUN_CS + PITCHING_H + PITCHING_HR + PITCHING_BB +
+                PITCHING_SO + FIELDING_E + FIELDING_DP,
+                mb_training_dataset)
 ```
 
 
+##### Model 1 Statistics
+
+**Model 1 Summary Stats**.
+
+```{r modelOneSummaryStats}
+model_one_summary <- summary(model_one)
+```
 
 
+**Model 1 Confidence Intervals**
+```{r modelOneConfidenceIntervals}
+confint(model_one)
+```
 
+##### Model 1 Plots
+
+**Model 1 Residuals Plot**
+
+```{r modelOneResidualsPlot, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE, results='hide'}
+par(mfrow = c(2, 2))
+partial.resid.plot(model_one)
+```
