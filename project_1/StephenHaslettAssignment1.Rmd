@@ -20,7 +20,7 @@ library(caret)
 library(Hmisc)
 library(gtsummary)
 library(rsample)
-library(asbio)
+library(MASS)
 ```
 
 
@@ -46,6 +46,19 @@ summary(mb_training_data)
 ```
 
 
+### Variable Distributions
+
+```{r dataDistributions, fig.height = 10, fig.width = 10, error=FALSE, warning=FALSE}
+distribution_data <- mb_training_data %>%
+  gather(key = 'variable_name', value = 'value')
+
+ggplot(distribution_data) + 
+  geom_histogram(aes(x = value, y = ..density..), bins = 30) + 
+  geom_density(aes(x = value), color = 'red') +
+  facet_wrap(. ~ variable_name, scales = 'free', ncol = 4)
+```
+
+
 ### Missing Data
 
 ```{r missingDataPercentages, echo=FALSE}
@@ -60,17 +73,36 @@ missing_values_table %>%
 ```
 
 
-### Variable Distributions
+91.61% percent of the rows are missing from the BATTING_HP variable, so we will remove this variable from the dataset completely. The percentage of missing data for the remaining variables with missing data is much less, and so excluding them from the final model could skew the results. Therefore, rather than dropping the variables completely, we will impute the missing values with the median value of the variable column in question.
 
-```{r dataDistributions, fig.height = 10, fig.width = 10, error=FALSE, warning=FALSE}
-distribution_data <- mb_training_data %>%
-  gather(key = 'variable_name', value = 'value')
-
-ggplot(distribution_data) + 
-  geom_histogram(aes(x = value, y = ..density..), bins = 30) + 
-  geom_density(aes(x = value), color = 'red') +
-  facet_wrap(. ~ variable_name, scales = 'free', ncol = 4)
+```{r missingDataManipulation, echo=FALSE}
+# Drop the BATTING_HBP variable from the dataset.
+mb_training_data <- mb_training_data %>% 
+  dplyr::select(-BATTING_HBP)
 ```
+
+**Snapshot of the data prior to mean imputation**
+
+```{r missingDataPreImputationSnapshot, echo=FALSE}
+# take a look at the data prior to imputation.
+head(mb_training_data)
+```
+
+
+```{r missingDataManipulationImputation, echo=FALSE}
+# Perform mean imputation on the remaining variables with missing values.
+for(i in 1:ncol( mb_training_data)) {
+   mb_training_data[ , i][is.na(mb_training_data[ , i])] <- mean(mb_training_data[ , i], na.rm = TRUE)
+}
+```
+
+**Snapshot of the data after mean imputation**
+
+```{r missingDataPostImputationSnapshot, echo=FALSE}
+# Look at the data after imputation.
+head(mb_training_data)
+```
+
 
 #### Correlation Table
 
@@ -116,23 +148,72 @@ model_one <- lm(TARGET_WINS ~ BATTING_H + BATTING_2B + BATTING_3B +
 
 ##### Model 1 Statistics
 
-**Model 1 Summary Stats**.
+**Model 1 Summary Stats**
 
-```{r modelOneSummaryStats}
-model_one_summary <- summary(model_one)
+```{r modelOneSummaryStats, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+summary(model_one)
 ```
 
 
+**Model 1 R Squared**
+```{r modelOneRSquared, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+summary(model_one)$r.squared
+```
+
+
+
 **Model 1 Confidence Intervals**
-```{r modelOneConfidenceIntervals}
+```{r modelOneConfidenceIntervals, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
 confint(model_one)
 ```
 
 ##### Model 1 Plots
 
-**Model 1 Residuals Plot**
-
-```{r modelOneResidualsPlot, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE, results='hide'}
-par(mfrow = c(2, 2))
-partial.resid.plot(model_one)
+```{r modelOnePlots, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+plot(fitted(model_one), resid(model_one), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+qqnorm(resid(model_one), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model_one), col = "dodgerblue", lwd = 2)
 ```
+
+#### Model 2
+
+Model 2 - Uses stepwise regression on the variables in Model 1 to create the best performing model.
+
+```{r dataModelTwo}
+model_two <- stepAIC(model_one, direction = 'both', trace = FALSE)
+```
+
+
+**Model 2 Summary Stats**
+
+```{r modelTwoSummaryStats, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+summary(model_two)
+```
+
+
+**Model 2 R Squared**
+```{r modelTwoRSquared, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+summary(model_two)$r.squared
+```
+
+
+**Model 2 Confidence Intervals**
+```{r modelTwoConfidenceIntervals, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+confint(model_two)
+```
+
+
+##### Model 2 Plots
+
+```{r modelTwoPlots, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+plot(fitted(model_two), resid(model_two), col = "grey", pch = 20,
+     xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
+abline(h = 0, col = "darkorange", lwd = 2)
+
+qqnorm(resid(model_two), main = "Normal Q-Q Plot", col = "darkgrey")
+qqline(resid(model_two), col = "dodgerblue", lwd = 2)
+```
+
+
