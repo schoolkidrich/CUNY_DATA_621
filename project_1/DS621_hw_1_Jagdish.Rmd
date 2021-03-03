@@ -1,0 +1,248 @@
+---
+title: "DS621_HW1_Jagdish"
+author: "Jagdish Chhabria"
+date: "2/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(MASS)
+library(tidyverse)
+library(dplyr)
+library(reshape2)
+library(kableExtra)
+library(corrplot)
+library(ggplot2)
+library(Hmisc)
+library(PerformanceAnalytics)
+library(GGally)
+library(ggpubr)
+library(car)
+
+```
+
+
+## R Markdown
+
+```{r }
+Load data
+url = "https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-training-data.csv"
+train.raw = read.csv(url)
+#train.raw<-read.csv("moneyball-training-data.csv")
+train.raw<-subset(train.raw,select=-c(INDEX))
+
+```
+
+
+
+```{r}
+# Inspect data
+dim(train.raw)
+summary(train.raw)
+```
+
+```{r}
+# Remove selected columns with large number of missing values
+train.raw<-subset(train.raw,select=-c(TEAM_BATTING_HBP,TEAM_BASERUN_CS))
+
+```
+
+```{r}
+# Check updated data frame
+summary(train.raw)
+```
+
+The following columns look like they have significant outliers:
+- TEAM_PITCHING_BB
+- TEAM_BASERUN_SB
+- TEAM_PITCHING_SO
+
+```{r}
+# Check columns that seem to have outliers
+
+#ggplot(stack(train),aes(x=ind,y=values))+geom_boxplot()
+#ggplot(melt(train), aes(variable, value)) + geom_boxplot()
+boxplot(train.raw$TEAM_PITCHING_SO)
+boxplot(train.raw$TEAM_PITCHING_BB)
+boxplot(train.raw$TEAM_BASERUN_SB)
+
+```
+
+
+```{r}
+# Remove outliers - Method 1
+for (n in c("TEAM_PITCHING_BB", "TEAM_BASERUN_SB", "TEAM_PITCHING_SO")) {
+  outliers<-boxplot(train.raw[,n],plot=FALSE)$out
+  train_updated<-train.raw[-which(train.raw[,n] %in% outliers),]
+}
+
+```
+
+
+```{r}
+summary(train_updated)
+```
+
+
+
+```{r}
+# Check impact of removing outliers
+boxplot(train_updated$TEAM_PITCHING_SO)
+boxplot(train_updated$TEAM_PITCHING_BB)
+boxplot(train_updated$TEAM_BASERUN_SB)
+
+```
+
+```{r}
+# Impute missing values with the median value for each remaining column
+
+train<-data.frame(sapply(train_updated,function(x) ifelse(is.na(x),median(x,na.rm = TRUE),x)))
+
+```
+
+
+
+```{r}
+# Check summary of modified dataset
+summary(train)
+
+```
+
+
+
+
+```{r data Distributions, fig.height = 10, fig.width = 10, error=FALSE, warning=FALSE}
+
+# Check distribution of remaining predictors
+distributions<-train%>%gather(key='variable_name', value='value')
+ggplot(distributions)+geom_histogram(aes(x = value, y = ..density..), bins = 30)+geom_density(aes(x = value), color = 'red')+facet_wrap(. ~ variable_name, scales = 'free', ncol = 4)
+
+```
+
+```{r}
+# Calculate correlation between variables
+train_corr_matrix<-train%>%cor()%>%round(2)%>%as.matrix()
+train_corr_matrix%>%kable()%>%kable_styling()
+
+```
+
+
+```{r}
+# flattenCorrMatrix
+# cormat : matrix of the correlation coefficients
+# pmat : matrix of the correlation p-values
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+    )
+}
+```
+
+
+```{r}
+# Another method to check correlations and their significance
+#train%>%pairs()
+#train%>%ggpairs()
+corr.mat<-rcorr(as.matrix(train))
+#corr.mat
+
+flattenCorrMatrix(corr.mat$r,corr.mat$P)%>%arrange(row,-abs(cor))
+
+```
+
+We drop the following columns:
+- TEAM_BATTING_HBP
+- TEAM_PITCHING_H
+- TEAM_PITCHING_SO
+
+We transform the following columns:
+- TEAM_BASERUN_SB
+- TEAM_BASERUN_CS
+- TEAM_BATTING_3B
+- TEAM_BATTING_HR
+- TEAM_BATTING_SO
+- TEAM_FIELDING_DP
+- TEAM_FIELDING_E
+- TEAM_PITCHING_HR
+
+
+```{r}
+par(mfrow=c(3,5))
+
+for (i in 1:ncol(train[,1: ncol(train) - 1 ])) {  
+  qqnorm(train[,i], main=names(train[i]))
+  qqline(train[,i])
+}
+
+```
+
+
+```{r}
+# Rename columns
+train<-train%>%rename(wins=TARGET_WINS, baserun_sb=TEAM_BASERUN_SB, bat_3b=TEAM_BATTING_3B, bat_hr=TEAM_BATTING_HR, bat_so=TEAM_BATTING_SO, field_dp=TEAM_FIELDING_DP, field_e=TEAM_FIELDING_E, pitch_hr=TEAM_PITCHING_HR, pitch_h=TEAM_PITCHING_H, pitch_so=TEAM_PITCHING_SO, bat_h=TEAM_BATTING_H, bat_2b=TEAM_BATTING_2B, bat_bb=TEAM_BATTING_BB, pitch_bb=TEAM_PITCHING_BB)
+
+```
+
+
+```{r}
+head(train)
+```
+
+
+```{r}
+#fit linear regression model
+model<-lm(wins~bat_h+bat_2b+bat_bb+bat_3b+bat_hr+pitch_bb+pitch_hr, data=train)
+
+#find optimal lambda for Box-Cox transformation 
+bc<-boxcox(wins~bat_3b, data=train)
+(lambda<-bc$x[which.max(bc$y)])
+
+#fit new linear regression model using the Box-Cox transformation
+new_model<-lm(((wins^lambda-1)/lambda)~bat_3b, data=train)
+
+```
+
+
+```{r}
+# Validate both models
+#define plotting area
+op <- par(pty = "s", mfrow = c(1, 2))
+
+#Q-Q plot for original model
+qqnorm(model$residuals)
+qqline(model$residuals)
+
+#Q-Q plot for Box-Cox transformed model
+qqnorm(new_model$residuals)
+qqline(new_model$residuals)
+
+#display both Q-Q plots
+par(op)
+
+
+
+```
+
+
+
+
+
+
+```{r}
+# Fit a model with selected variables
+mdl1<-lm(wins~bat_h+bat_2b+bat_bb+bat_3b+bat_hr+pitch_bb+pitch_hr, data=train)
+
+summary(mdl1)
+
+```
+
+
+

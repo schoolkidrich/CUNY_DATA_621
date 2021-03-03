@@ -25,7 +25,8 @@ Alice is currently working in this file.
 This analysis requires installation of `tidyverse`,`corrplot`, and `reshape2`.
 
 ```{r, setup, include=FALSE}
-knitr::opts_chunk$set(fig.width = 8, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(fig.width = 8, message=FALSE, warning=FALSE, cache = TRUE)
+#This will not appear in the PDF. This hides all the warnings and messages, and caches the results of heavy chunks so it loads faster.
 ```
 
 ```{r pckgs, include=FALSE}
@@ -93,61 +94,41 @@ test <- training_names[-sample_id,]
 
 What does the data look like? Using `ggplot::facet_wrap`, we can see many box plots at once.
 
-``` {r histograms}
+``` {r boxplots, warning=FALSE}
 long <- training %>% as.data.frame() %>% melt
-long %>%
-  ggplot(aes(x=value)) + 
-  geom_histogram() + 
-  facet_wrap(~variable, scales='free')
 
 long %>%
   ggplot(aes(x=value)) + 
   geom_boxplot() + 
   facet_wrap(~variable, scales='free')
+  
+```
+
+We can also see that soe variables are missing many cases. Given that getting hit by a pitch is fairly rare, it may be best to assume that these missing cases are 0, rather than omit that many cases. Alternatively we can drop that variable entirely. 
+
+```{r missing}
+missing <- sapply(training, FUN = function(x) sum(is.na(x)))
+missing
 ```
 
 ```{r}
+test_missing <- function(){
+  missingALot <- c("HitByPitch_AtBat", "OutStealingBases", "DoublePlays")
+  for (feature in missingALot){
+    print(feature)
+    df <- training[, c("Wins", feature)] %>% na.omit()
+    model <- lm(df$Wins ~ as.vector(df[,feature]))
+  }  
+}
 
-# removing index column
-# how to handle NA values? TEAM_BATTING_HBP has 2085 NA values and TEAM_BASERUN_CS has 772
-# removing them for now
-# listwise deletion of missing values
+test_missing()
 
-#moneyball_training <- na.omit(moneyball_training[-c(1, 10, 11)])
-
-# 
-# # removing outliers <- I think this may be too agressive (Alice)
-# out_ind <- c()
-# outliers <- c()
-# 
-# for (i in 1:ncol(training)){
-#   
-#   out <- boxplot.stats(training[, i])$out
-#   outliers <- append(outliers, out)
-#   out_ind <- append(out_ind, which(training[, i] %in% c(out)))
-#   
-# }
-# 
-# # to see the outliers
-# # cbind(outliers, moneyball_training[out_ind,])
-# 
-# # removing the outliers
-# # moneyball_training <- moneyball_training[-out_ind, ]
-# 
-# # changing the column names to be more human readable
-# 
-# 
-# 
-# 
-# str(moneyball_training)
+model <- lm(Wins ~ HitByPitch_AtBat, training)
+plot(Wins ~ HitByPitch_AtBat, training) +
+abline(model, color="red")
 ```
 
-
-
-
-
-## Including Plots
-
+### Feature Correlation
 
 ```{r}
 # computing correlation matrix
@@ -155,10 +136,11 @@ corr <- round(cor(training), digits = 1)
 
 corrplot(corr, type = 'upper', addCoef.col = 'black', tl.col = 'black', tl.srt = 45)
 ```
+
 ## Feature Selection
 We should drop highly correlated values, but which ones to drop?
 
-Using our understanding of baseball, we can also tell which features are highly correlated because they are in fact calculated from a common statistic (e.g. Runs Hit, and Double Hit both include how many doubles were hit!) versus variables which are correlated in fact but not in function (e.g. Runs Allowed Pitcher vs Runs Allowed Field -- this is a measure of the picthing staff versus the batting so while these tend to be similar they are in fact measuring the skill of different players at different points in the game.)
+Using our understanding of baseball, we can also tell which features are highly correlated because they are in fact calculated from a common statistic (e.g. Runs Hit, and Double Hit both include how many doubles were hit!) versus variables which are correlated in fact but not in function (e.g. Runs Allowed Pitcher vs Runs Allowed Field -- this is a measure of the pitching staff versus the batting so while these tend to be similar they are in fact measuring the skill of different players at different points in the game.)
 
 Oddly, although pitching hits and pitching homeruns are likewise connecting in the real world, they are negatively correlated at just the 0.1 value in the data.
 
@@ -366,45 +348,26 @@ ggplot(corr_coefs, aes(x = factor(feature, levels = feature), y = coef)) +
 ## Model Testing
 
 Then we can test some models
+
 ```{r}
-lm_original <- lm(Wins ~ . -Singles, data = training)
-summary(lm_original)
-```
-```{r}
-lm_all <- lm(Wins ~ . - Hits, data = training) 
+lm_all <- lm(Wins ~ ., data = training) 
 summary(lm_all)
 ```
 
-These produce pretty identica results. Maybe this is why Singles aren't tracked!
-
-Let's drop the least correlated feature.
+Let's drop the feature with the most missing data and see if that helps.
 ```{r}
 test <- function(droplist, data=training){
   df <- data %>% select(-all_of(droplist))
   lm <- lm(Wins ~ . , df) 
-  # 
-  # print("Features Dropped")
-  # print(droplist)
 
   print("R Squared")
   print(summary(lm)$adj.r.squared)
-
-    # print("p value")
-  # f <- summary(lm)$fstatistic
-  # p <- pf(f[1],f[2],f[3],lower.tail=F)
-  # attributes(p) <- NULL
-  # print(p)
   return(summary(lm)$adj.r.squared)
 }
 
-droplist <- c()
-Rs <- c()
-for (feature in corr_coefs$feature) {
-  droplist <- append(droplist, feature)
-  Rs <- append(Rs, test(droplist))
-}
+missingALot <- c("HitByPitch_AtBat", "OutStealingBases", "DoublePlays")
 
-Rs
+test(missingALot)
   
 ```
 
