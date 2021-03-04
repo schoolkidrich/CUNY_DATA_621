@@ -14,11 +14,14 @@ library(ggplot2)
 library(tidyverse)
 library(magrittr)
 library(Hmisc)
+library(e1071)
 ```
 
 ```{r}
 moneyball <- read.csv("https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-training-data.csv") 
+
 ```
+
 
 ### Data Exploration
 
@@ -33,12 +36,11 @@ The following variables have missing data:
 ```{r}
 summary(moneyball)
 
-#corr_data <- cor(moneyball, use = "pairwise.complete.obs")
-#round(corr_data,2)
-
+# creates a list with the correlations and p values 
 corr_data<- rcorr(as.matrix(moneyball))
 corr_p <- round(corr_data$P,4)
 
+# this takes the values and correlations and makes it into a 2 column dataframe
 flattenCorrMatrix <- function(cormat, pmat) {
   ut <- upper.tri(cormat)
   data.frame(
@@ -49,19 +51,49 @@ flattenCorrMatrix <- function(cormat, pmat) {
     )
 }
 
+# sorted the pairs of correlations by their p value to show variables with the biggest
+# relationships, with the p showing the significance value
+
 sorted_cor <- flattenCorrMatrix(corr_data$r, corr_data$P) %>%
    arrange(desc(abs(cor)))
-   
- head(sorted_cor) #this shows the highest correlations
 
+# As seen, TEAM_BATTING_HR is correlated to TEAM_PITCHING_HR and TEAM_BATTING_SO
+
+head(sorted_cor) #this shows the highest correlations
+
+# correlation plot
+# didn't remove the index yet
 corrplot(corr_data$r, type = "upper", order = "hclust", tl.col = "black")
 
+# prints out the box plots for each variable
 moneyball %>%
+  dplyr::select(-c("INDEX")) %>%
   gather(variable, value, TARGET_WINS:TEAM_FIELDING_DP) %>%
   ggplot(., aes(x= variable, y=value)) + 
   geom_boxplot() +
   facet_wrap(~variable, scales ="free", ncol = 4) +
   labs(x = element_blank(), y = element_blank())
+
+# histograms for each variable
+moneyball %>%
+  dplyr::select(-c("INDEX")) %>%
+  gather(variable, value, TARGET_WINS:TEAM_FIELDING_DP) %>%
+  ggplot(., aes(x = value)) + 
+  geom_histogram(bins = 25) +
+  facet_wrap(~variable, scales ="free", ncol = 4) +
+  labs(x = element_blank(), y = element_blank())
+
+
+# this is to just show the skewness of each variable
+# TEAM_PITCHING_SO, TEAM_PITCHING_H, TEAM_PITCHING_BB are highly skewed
+# can fix skewness with transformation such as log or inverse
+
+moneyball %>%
+  dplyr::select(-c("INDEX")) %>%
+  sapply(., skewness, na.rm = TRUE) %>% 
+  as.data.frame() %>%
+  arrange(desc(.))
+
 ```
 
 ### Data Preparation
@@ -73,31 +105,52 @@ moneyball %>%
 moneyball <- moneyball %>% 
   mutate(TEAM_BATTING_1B = TEAM_BATTING_H - TEAM_BATTING_2B - TEAM_BATTING_3B - TEAM_BATTING_HR) %>%
   dplyr::select(-c("TEAM_BATTING_HBP"))
-  
 
+# -----------------------------------------------------------------------------  
 
+#can ignore, I tried to transform the variable with big skewness
+#but it did not affect the model
+#could be because the model is removing the NA's
+
+# test <- moneyball %>%
+#  mutate(TEAM_PITCHING_SO = ifelse(is.na(TEAM_PITCHING_SO), 
+#                                 mean(moneyball$TEAM_PITCHING_SO, na.rm = TRUE),TEAM_PITCHING_SO),
+#         TEAM_PITCHING_SO = 1/TEAM_PITCHING_SO,
+#         TEAM_PITCHING_SO = ifelse(is.infinite(TEAM_PITCHING_SO),NA,TEAM_PITCHING_SO)) %>%
+#  dplyr::select(TEAM_PITCHING_SO)
+
+# skewness(test$TEAM_PITCHING_SO, na.rm = TRUE)
+
+# went from 22 to 1.68
+
+#moneyball$TEAM_PITCHING_SO <- test$TEAM_PITCHING_SO
+
+# -----------------------------------------------------------------------------  
+
+#ignore, in case of imputing
 #TEAM_BATTING_HBP = ifelse(is.na(TEAM_BATTING_HBP), mean(moneyball$TEAM_BATTING_HBP, na.rm = TRUE),TEAM_BATTING_HBP)
 
-
-test <- moneyball %>%
-  select(c("TEAM_PITCHING_HR","TEAM_BATTING_HR")) %>%
+# can ignore this
+# this was to show the difference between the two
+difference <- moneyball %>%
+  dplyr::select(c("TEAM_PITCHING_HR","TEAM_BATTING_HR")) %>%
   mutate(difference = TEAM_PITCHING_HR-TEAM_BATTING_HR)
+summary(difference)
 ```
 
 ### Build Models
 
-```{r}
-
-```
-
-
-
-
 
 ```{r}
-#highest model was with team_batting_hbp included, prior to na
+#highest model was with team_batting_hbp included, prior to removing any na
 
 #Removed: TEAM_BATTING_H (no diff to model)
+
+
+# I applied logs and inverse to the variables to try to fix the skewness
+# but R2 stayed the same, I believe due to NA
+
+
 model1 <- lm(TARGET_WINS ~   TEAM_BATTING_2B + TEAM_BATTING_3B + 
               TEAM_BATTING_HR + TEAM_BATTING_BB  + TEAM_BATTING_SO +TEAM_BASERUN_SB +  
               TEAM_BASERUN_CS + TEAM_PITCHING_H + TEAM_PITCHING_HR +  
@@ -118,6 +171,7 @@ qqline(resid(model1), col = "dodgerblue", lwd = 2)
 #removed TEAM_BATTING_SB, .4299
 #removed TEAM_PITCHING_HR, .4302
 # removed TEAM_BATTING_SO, .4305
+# removed based on P values
 model2 <- lm(log(TARGET_WINS) ~   TEAM_BATTING_2B + TEAM_BATTING_3B + 
               TEAM_BATTING_HR + TEAM_BATTING_BB +TEAM_BASERUN_SB +  
               TEAM_BASERUN_CS + TEAM_PITCHING_H + 
@@ -134,6 +188,8 @@ qqline(resid(model2), col = "dodgerblue", lwd = 2)
 ```
 
 ```{r}
+#boxcox method
+
 model3 <- lm(TARGET_WINS ~   TEAM_BATTING_2B + TEAM_BATTING_3B + 
               TEAM_BATTING_HR + TEAM_BATTING_BB  +TEAM_BASERUN_SB +  
               TEAM_BASERUN_CS + TEAM_PITCHING_H + 
@@ -143,7 +199,7 @@ summary(model3)
 
 MASS::boxcox(model3, lambda = seq(0.75, 1.6, by = 0.05), plotit = TRUE)
 
-model_cox = lm((((TARGET_WINS ^ 1.2) - 1) / 1.2) ~ TEAM_BATTING_2B + TEAM_BATTING_3B + 
+model_cox = lm((((TARGET_WINS ^ 1.23) - 1) / 1.23) ~ TEAM_BATTING_2B + TEAM_BATTING_3B + 
               TEAM_BATTING_HR + TEAM_BATTING_BB  +TEAM_BASERUN_SB +  
               TEAM_BASERUN_CS + TEAM_PITCHING_H + 
               TEAM_PITCHING_SO + TEAM_FIELDING_E + TEAM_FIELDING_DP +
@@ -159,6 +215,8 @@ qqline(resid(model_cox), col = "dodgerblue", lwd = 2)
 ```
 
 ```{r}
+#took ratio of the correlated variables
+
 model4 <- lm(TARGET_WINS ~   TEAM_BATTING_2B + TEAM_BATTING_3B + 
               I( TEAM_PITCHING_HR / TEAM_BATTING_HR) +  
               TEAM_BASERUN_CS + TEAM_PITCHING_H + TEAM_BASERUN_SB +
@@ -175,10 +233,12 @@ qqline(resid(model4), col = "dodgerblue", lwd = 2)
 
 
 ```{r}
+#here applies random transformations
 model5 <- lm(TARGET_WINS ~ TEAM_BATTING_1B + TEAM_BATTING_2B + TEAM_BATTING_3B + 
                I(TEAM_PITCHING_HR*TEAM_BATTING_HR) + TEAM_BATTING_BB + TEAM_FIELDING_E +
                TEAM_BASERUN_SB + I(1/TEAM_FIELDING_DP) + TEAM_PITCHING_SO +
                I(TEAM_BASERUN_CS ^ 3), moneyball)
+
 
 summary(model5)
 
@@ -187,7 +247,3 @@ plot(fitted(model5), resid(model5), col = "grey", pch = 20,
 abline(h = 0, col = "darkorange", lwd = 2)
 qqnorm(resid(model5), main = "Normal Q-Q Plot", col = "darkgrey")
 qqline(resid(model5), col = "dodgerblue", lwd = 2)
-```
-
-
-
