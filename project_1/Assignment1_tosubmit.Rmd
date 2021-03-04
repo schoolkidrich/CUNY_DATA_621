@@ -1,0 +1,152 @@
+---
+title: "Moneyball: DATA621 Project #1"
+author: "Team 2. "
+date: "03/07/2021"
+output: 
+  pdf_document:
+    toc: true
+    number_sections: true
+    highlight: tango
+    df_print: kable
+fontsize: 11pt
+geometry: margin=1in
+---
+
+File to submit.
+
+## Introduction
+
+[add text intro here]
+
+## Setup
+
+This analysis requires installation of `tidyverse`,`corrplot`, and `reshape2` [add other pckgs gere]
+
+```{r, setup, include=FALSE} 
+knitr::opts_chunk$set(fig.width = 10, message=FALSE, warning=FALSE, cache = TRUE)
+#This will not appear in the PDF. 
+#This setting hides all the warnings and messages in the knit document (not in the R!), and caches the results of heavy chunks so it loads faster.
+```
+
+```{r pckgs, include=FALSE}
+#This will not appear in the PDF. 
+library(dplyr)
+library(tidyverse)
+library(reshape2)
+library(corrplot)
+```
+
+### Load Raw Data
+
+The data has been divided in advance into a training set, `training_raw`, and an evaluation set, `eval_raw`.  The evaluation set does *not* contain the target information. 
+
+```{r load_data, message=FALSE}
+url1 = "https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-training-data.csv"
+training_raw = read_csv(url1)
+```
+
+### Rename Columns
+
+Rename the columns to be more human-readable.
+
+```{r rename}
+training <- training_raw %>%
+  select(-INDEX) %>%
+  rename_with(~ gsub("TEAM_", "", .x)) %>%
+  rename_with(stringr::str_to_title) %>%
+  dplyr::rename(
+    Wins = Target_wins,
+    Hits = Batting_h,
+    Doubles = Batting_2b,
+    Triples = Batting_3b,
+    HomeRuns = Batting_hr,
+    Walks_AtBat = Batting_bb,
+    StrikeOuts_AtBat = Batting_so,
+    BasesStolen = Baserun_sb,
+    OutStealingBases = Baserun_cs,
+    Hits_Allowed = Pitching_h,
+    HitByPitch_AtBat = Batting_hbp,
+    Errors = Fielding_e,
+    HomeRuns_Allowed = Pitching_hr,
+    Walks_Allowed = Pitching_bb,
+    StrikeOuts = Pitching_so,
+    DoublePlays = Fielding_dp
+  )
+```
+
+
+## Data Exploration
+
+What does the data look like? 
+
+``` {r boxplots, warning=FALSE, message=FALSE}
+long <- training %>% as.data.frame() %>% melt()
+
+long %>%
+  ggplot(aes(x=value)) + 
+  geom_boxplot() + 
+  facet_wrap(~variable, scales='free')
+  
+```
+
+### Missing cases
+
+Several variables have missing values. HitByPitch_AtBat has 1678 missing!
+
+By default, R's built-in `lm` function will omit cases with missing values.
+
+```{r missing}
+missing <- sapply(training, FUN = function(x) sum(is.na(x)))
+missing
+```
+
+
+### Feature Correlation
+
+```{r}
+# computing correlation matrix
+corr <- round(cor(training), digits = 1)
+
+corrplot(corr, type = 'upper', addCoef.col = 'black', tl.col = 'black', tl.srt = 45)
+```
+
+
+## Models
+
+### Handling of NA values
+
+Having tested both imputing value for missing variables and omitting cases with missing variables, a better result is found for omitting cases. [Question -- could this be because we eliminated too many cases by dropping the cases with missing at bats?]
+
+#### All features
+
+#### All features with imputed values for NAs
+
+### Transform data
+#### Box-Cox Transform
+
+### Feature selection
+
+[select out features with lowest correlation]
+
+## Testing Model Assumptions
+
+[residual plots]
+
+## Model Selection & Conclusions
+
+Choose model with most explanatory value (high adjusted $R^2$) with fewest features. Assume that the simplest model should be preferred, all else being equal.
+
+## Prediction
+
+The final exercise is to use the selected model to predict the target values (wins) for the eval set, `eval_raw`.
+
+```{r predict}
+url2 = "https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-evaluation-data.csv"
+eval_raw=read_csv(url2)
+```
+
+## References
+
+Sellmair, Reinhard. "How to handle correlated features?" June 25, 2018. https://www.kaggle.com/reisel/how-to-handle-correlated-features
+
+Xie, Yihui, J. J. Allaire, and Garrett Grolemund, *R Markdown: The Definitive Guide*, CRC PressDecember 14, 2020 https://bookdown.org/yihui/rmarkdown/r-code.html. 
