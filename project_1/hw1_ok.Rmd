@@ -2,7 +2,9 @@
 title: "project 1"
 author: "Orli Khaimova"
 date: "2/24/2021"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -35,7 +37,7 @@ summary(moneyball)
 #round(corr_data,2)
 
 corr_data<- rcorr(as.matrix(moneyball))
-corr_p <- round(corr2$P,4)
+corr_p <- round(corr_data$P,4)
 
 flattenCorrMatrix <- function(cormat, pmat) {
   ut <- upper.tri(cormat)
@@ -70,9 +72,6 @@ moneyball <- moneyball %>%
   mutate(TEAM_BATTING_1B = TEAM_BATTING_H - TEAM_BATTING_2B - TEAM_BATTING_3B - TEAM_BATTING_HR) %>%
   dplyr::select(-c("TEAM_BATTING_HBP"))
   
-test <- moneyball %>%
-  select(TEAM_BATTING_HBP) %>%
-  mutate(TEAM_BATTING_HBP = )
 
 
 #TEAM_BATTING_HBP = ifelse(is.na(TEAM_BATTING_HBP), mean(moneyball$TEAM_BATTING_HBP, na.rm = TRUE),TEAM_BATTING_HBP)
@@ -99,13 +98,13 @@ test <- moneyball %>%
 #Removed: TEAM_BATTING_H (no diff to model)
 model1 <- lm(TARGET_WINS ~   TEAM_BATTING_2B + TEAM_BATTING_3B + 
               TEAM_BATTING_HR + TEAM_BATTING_BB  + TEAM_BATTING_SO +TEAM_BASERUN_SB +  
-              TEAM_BASERUN_CS + TEAM_PITCHING_H + TEAM_PITCHING_HR + 
+              TEAM_BASERUN_CS + TEAM_PITCHING_H + TEAM_PITCHING_HR +  
               TEAM_PITCHING_BB + TEAM_PITCHING_SO + TEAM_FIELDING_E + TEAM_FIELDING_DP +
               TEAM_BATTING_1B, moneyball)
 
 summary(model1)
 
-plot(fitted(model1), resid(model), col = "grey", pch = 20,
+plot(fitted(model1), resid(model1), col = "grey", pch = 20,
      xlab = "Fitted", ylab = "Residuals", main = "Fitted versus Residuals")
 abline(h = 0, col = "darkorange", lwd = 2)
 qqnorm(resid(model1), main = "Normal Q-Q Plot", col = "darkgrey")
@@ -187,9 +186,6 @@ abline(h = 0, col = "darkorange", lwd = 2)
 qqnorm(resid(model5), main = "Normal Q-Q Plot", col = "darkgrey")
 qqline(resid(model5), col = "dodgerblue", lwd = 2)
 ```
-
-
-
 
 
 
