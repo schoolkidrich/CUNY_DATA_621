@@ -51,6 +51,8 @@ flattenCorrMatrix <- function(cormat, pmat) {
 
 sorted_cor <- flattenCorrMatrix(corr_data$r, corr_data$P) %>%
    arrange(desc(abs(cor)))
+   
+ head(sorted_cor) #this shows the highest correlations
 
 corrplot(corr_data$r, type = "upper", order = "hclust", tl.col = "black")
 
