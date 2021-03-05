@@ -28,7 +28,7 @@ manager to lose interest while too little detail will make the manager consider 
 
 ### Dataset
 
-Each record in the in the Money Ball training dataset represents a professional baseball team from the years 1871 to 2006 inclusive. Each record
+Each record in the Money Ball training dataset represents a professional baseball team from the years 1871 to 2006 inclusive. Each record
 has the performance of the team for the given year, with all of the statistics adjusted to match the performance of a 162 game season.
 Below is a short description of the variables of interest in the data set:
 
