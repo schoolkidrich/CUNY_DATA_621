@@ -9,6 +9,21 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+# Disable scientific numbers for readability purposes.
+options(scipen = 999)
+
+# Load required libraries.
+library(skimr)
+library(knitr)
+library(ggplot2)
+library(tidyverse)
+library(kableExtra)
+library(caret)
+library(Hmisc)
+library(gtsummary)
+library(rsample)
+library(MASS)
+library(corrplot)
 ```
 
 **Group Members**: _Alicia Friedman, Jagdish Chhabria, Diego Correa, Orli Khaimova, Richard Zheng, Stephen Haslett_
@@ -27,6 +42,16 @@ only use the variables given to you (or variables that you derive from the varia
 manager to lose interest while too little detail will make the manager consider that you aren’t doing your job.*
 
 ### Dataset
+
+```{r dataImport}
+# Pull in the training data.
+file_url <- 'https://github.com/Jagdish16/CUNY_DATA_621/raw/main/project_1/moneyball-training-data.csv'
+moneyball_training <- read.csv(file_url, header = TRUE)
+
+# Remove the INDEX variable as it is of no value in the data evaluation.
+moneyball_training <- moneyball_training %>%
+  dplyr::select(-INDEX)
+```
 
 Each record in the Money Ball training dataset represents a professional baseball team from the years 1871 to 2006 inclusive. Each record
 has the performance of the team for the given year, with all of the statistics adjusted to match the performance of a 162 game season.
