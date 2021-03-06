@@ -43,7 +43,7 @@ manager to lose interest while too little detail will make the manager consider 
 
 ### Dataset
 
-```{r dataImport}
+```{r dataImport, echo=FALSE}
 # Pull in the training data.
 file_url <- 'https://github.com/Jagdish16/CUNY_DATA_621/raw/main/project_1/moneyball-training-data.csv'
 moneyball_training <- read.csv(file_url, header = TRUE)
@@ -53,11 +53,28 @@ moneyball_training <- moneyball_training %>%
   dplyr::select(-INDEX)
 ```
 
-Each record in the Money Ball training dataset represents a professional baseball team from the years 1871 to 2006 inclusive. Each record
-has the performance of the team for the given year, with all of the statistics adjusted to match the performance of a 162 game season.
+The Moneyball dataset contains 17 columns and 22276 rows. Each record in the Money Ball training dataset represents a professional baseball team from the years 1871 to 2006 inclusive. Each record has the performance of the team for the given year, with all of the statistics adjusted to match the performance of a 162 game season. For this assignment, the target variable in the dataset is TARGET_WINS.
+
 Below is a short description of the variables of interest in the data set:
 
 ![Variables of Interest](./images/variables-of-interest.png)
+
+The first variable in the above table (INDEX) was dropped from the dataset due to the fact that it is mearly a row identifier, and has no impact on the target variable (TARGET_WINS).
+
+### Summary Statistics
+
+The first step in our data exploration was to compile summary statistics to give us some insight into the data prior to preparing the data for modeling. To make the variable names more readable, we removed the "TEAM_" prefix from each variable.
+
+```{r dataExploration, echo=FALSE}
+# Remove the prefix "TEAM_" from variable names to make them more readable.
+names(moneyball_training) <- names(moneyball_training) %>% 
+    str_replace_all('TEAM_', '')
+
+# Summarize the data.
+summary(moneyball_training)
+```
+
+
 
 
 ## 2. Data Preparation
