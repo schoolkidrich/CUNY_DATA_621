@@ -284,6 +284,18 @@ We see that the adjusted R-squared for this model is 0.40 i.e. these predictors 
 ```{r modelOneRSquared, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
 summary(model_one)$r.squared
 ```
+
+**Model 1 Coefficients**
+
+According to the model, there are 4 coefficients that are not as expected: `Hits`, `Doubles`,
+`Hits_Allowed`, and `DoublePlays`. If a team has a lot of hits, doubles, or double plays,
+it would be expected that such a team would win more games. Futhermore, if a team has a lot of hits
+allowed, it would be expected that such a team would lost more games. This can be due to skewed data since
+the skewness of `Hits_Allowed` is `r e1071::skewness(mb_training_updated$Hits_Allowed)`. 
+Prior to removing outliers, the variable used to be heavily right skewed with a skewness of 
+`r e1071::skewness(mb_training$Hits_Allowed)`. It can also mean that there were some teams 
+who had more hits and doubles than the average. 
+
 **Model 1 Confidence Intervals**
 
 We calculate the 95% confidence intervals for each of the co-efficients and the intercept for this model.
@@ -297,7 +309,7 @@ confint(model_one)
 We plot the residuals versus the fitted values - it shows that the residuals are scattered fairly evenly and there doesn't seem to be a trend. The distribution of the residuals does not seem very skewed. The same can be seen through the qq-plot as well.
 
 
-```{r modelOnePlots, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+```{r modelOnePlots, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE, out.width = "33%", fig.show = "hold"}
 ggplot(data = model_one, aes(x = .fitted, y = .resid)) +
   geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
   geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
@@ -324,9 +336,16 @@ summary(model_two)
 ```
 However we see minimal impact to the R-squared value, which remains around 0.40.
 
+**Model 2 Coefficients**
+
+According to this model, there are again 4 coefficients that are not as expected: `Hits`, `Doubles`,
+`Hits_Allowed`, and `DoublePlays`. We expect these variables to have the opposite effect on
+the target wins. Similarly to Model 1, this can be due to skewed data and there could have
+been some teams who either performed better or worse than the average. 
+
 ##### Model 2 Plots
 
-```{r modelTwoPlots, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+```{r modelTwoPlots, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE, out.width = "33%", fig.show = "hold"}
 
 ggplot(data = model_two, aes(x = .fitted, y = .resid)) +
   geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
@@ -395,6 +414,17 @@ We don't see much change to the R-squared value.
 summary(model_three)$r.squared
 ```
 
+**Model 3 Coefficients**
+
+According to this model, there are 2 coefficients that are not as expected: `Doubles` and
+`Hits_Allowed`. We expect these variables to have the opposite effect on
+the target wins. Similarly to Model 1, this can be due to skewed data and there could have
+been some teams who either performed better or worse than the average. Also the effect of `DoublePlays`
+effect is worsened as it is given a greater weight compared to all the other variables.
+The coefficients gives a greater weight to those who have less double plays. It would not be the 
+most efficient model to use because double plays occur nearly one time each game by each team.
+Also the coefficient is unreasonable since each team only plays 162 games a season.
+
 **Model 3 Confidence Intervals**
 
 ```{r modelThreeConfidenceIntervals, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
@@ -403,7 +433,7 @@ confint(model_three)
 
 ##### Model 3 Plots
 
-```{r modelThreePlots, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+```{r modelThreePlots, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE, out.width = "33%", fig.show = "hold"}
 
 ggplot(data = model_three, aes(x = .fitted, y = .resid)) +
   geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
@@ -453,6 +483,14 @@ summary(model_cox)$r.squared
 
 We don't see much impact on R-squared, possibly because the response variable was close to normal to begin with.
 
+**Model 4 Coefficients**
+
+According to this model, there are 4 coefficients that are not as expected: `Hits`, `Doubles`,
+`Hits_Allowed` and `DoublePlays`. We expect these variables to have the opposite effect on
+the target wins. This can be attributed to skewed data and the missing values that were imputed.
+The intercept is also unreasonable since it can be interpreted that a team scores on
+average 169 wins, given that everything else is 0 and there is a 162 game season. 
+
 **Model 4 Confidence Intervals**
 
 We calculate the 95% confidence intervals for each of the co-efficients and the intercept for this model.
@@ -466,7 +504,7 @@ confint(model_cox)
 We plot the residuals versus the fitted values - it shows that the residuals are scattered fairly evenly and there doesn't seem to be a trend. The distribution of the residuals does not seem very skewed. The same can be seen through the qq-plot as well.
 
 
-```{r modelFourPlots, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE}
+```{r modelFourPlots, error=FALSE, warning=FALSE, echo=FALSE, message=FALSE, out.width = "33%", fig.show = "hold"}
 ggplot(data = model_cox, aes(x = .fitted, y = .resid)) +
   geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
   geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
