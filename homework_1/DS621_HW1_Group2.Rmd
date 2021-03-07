@@ -1183,4 +1183,56 @@ ggplot(data = model_cox) + stat_qq(aes(sample = .stdresid)) + geom_abline()
 # Model Selection
 # =====================================================================================
 
+# Predict the number of wins for the test data using model one.
+
+# Load in the test data.
+url2 <- 'https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-evaluation-data.csv'
+mb_test <- read.csv(url2)
+
+# Remove the INDEX variable as it is of no value in the data evaluation.
+mb_test <- subset(mb_test, select = -c(INDEX))
+
+# Summarize the test data.
+summary(mb_test)
+
+# Rename the test data variables to be more intuitive.
+mb_test <- mb_test %>%
+  rename_with(~ gsub("TEAM_", "", .x)) %>%
+  rename_with(stringr::str_to_title) %>%
+  dplyr::rename(
+    Hits = Batting_h,
+    Doubles = Batting_2b,
+    Triples = Batting_3b,
+    HomeRuns = Batting_hr,
+    Walks_AtBat = Batting_bb,
+    StrikeOuts_AtBat = Batting_so,
+    BasesStolen = Baserun_sb,
+    OutStealingBases = Baserun_cs,
+    Hits_Allowed = Pitching_h,
+    HitByPitch_AtBat = Batting_hbp,
+    Errors = Fielding_e,
+    HomeRuns_Allowed = Pitching_hr,
+    Walks_Allowed = Pitching_bb,
+    StrikeOuts = Pitching_so,
+    DoublePlays = Fielding_dp
+  )
+
+# Impute missing values with the median value for each column.
+mb_test_updated <- data.frame(sapply(mb_test, function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x)))
+
+# Summarize the test data.
+summary(mb_test_updated)
+
+# Predicting Wins in the test data and looking at the distribution. 
+mb_test_updated$predicted_wins <- predict(model_one, type = 'response', newdata = mb_test_updated)
+
+ggplot(data = mb_test_updated, aes(x = predicted_wins))  +
+  geom_histogram( color = 'black', fill =  'gray') +
+  geom_vline(aes(xintercept = mean(predicted_wins)), linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 500, y = 150,label= str_replace_all(toString(summary(mb_test_updated['predicted_wins'])),',','\n'))) +
+  labs(title = 'Wins Prediction Histogram Plot', y = 'Count', x = 'Wins Prediction')
+
+# Create a table of prediction and confidence intervals.
+test_data <- predict(model_one, newdata = mb_test_updated, interval = 'prediction')
+summary(test_data)
 ```
