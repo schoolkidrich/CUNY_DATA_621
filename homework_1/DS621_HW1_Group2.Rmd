@@ -5,12 +5,16 @@ output:
   pdf_document:
     extra_dependencies: ["geometry", "multicol", "multirow", "xcolor"]
     toc: TRUE
+    number_sections: true
+    highlight: tango
+    df_print: kable
 ---
 
 **Group 2 members:** _Alice Friedman, Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE) #sets global options for chunks when *knit*
+knitr::opts_chunk$set(echo = FALSE, warning=FALSE, message=FALSE, cache=TRUE, fig.pos="!h") #sets global options for chunks when *knit*
+knitr::include_graphics
 #Note: messages and warnings will still show when running in the R console
 
 # Disable scientific numbers for readability purposes.
@@ -28,40 +32,42 @@ library(ggpubr)
 library(car)
 ```
 
-## Assignment Objective
+## Introduction
+
+### Assignment Objective
 
 In this assignment, we analyze and model a baseball dataset containing multi-year game statistics for different teams. The objective is to build a multiple linear regression model on the training data to predict the number of wins for the team. We can only use the variables given to us (or variables that we derive from the variables provided).
 
-### Data
+#### Data
 
 There are 2 datasets provided - The Moneyball training dataset contains 17 columns and 2276 rows. Each record in the Money Ball training dataset represents a professional baseball team from the years 1871 to 2006 inclusive. Each record has the performance of the team for the given year, with all of the statistics adjusted to match the performance of a 162 game season. For this assignment, the target variable in the dataset is TARGET_WINS.
 
-Below is a short description of the variables of interest in the data set:
+On the nex page is a short description of the variables of interest in the data set:
 
 ![Variables of Interest](./images/variables-of-interest.png)
 
-## Purpose of Analysis
+### Purpose of Analysis
 
 The purpose of the analysis is to find which of the predictors have significant ability to explain the variation in the response variable (number of wins by a team), and to make a prediction for all the records provided in the test data set.
 
-## Method
+### Method
 The method used is a multiple linear regression model on the training data to predict the number of wins for the team.
 
 
 ```{r load_training_data, echo=FALSE, message=FALSE, warning=FALSE}
 # Load in the training data.
 url = "https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-training-data.csv"
-mb_training <- read.csv(url)
+mb_training_raw <- read.csv(url)
 
 # Remove the INDEX variable as it is of no value in the data evaluation.
-mb_training <- subset(mb_training, select = -c(INDEX))
+mb_training_raw <- subset(mb_training_raw, select = -c(INDEX))
 
 ```
 
 
 ```{r renameColumns, echo=FALSE, message=FALSE, warning=FALSE}
 # Rename the columns to be more intuitive.
-mb_training <- mb_training %>%
+mb_training <- mb_training_raw %>%
   rename_with(~ gsub("TEAM_", "", .x)) %>%
   rename_with(stringr::str_to_title) %>%
   dplyr::rename(
@@ -84,9 +90,9 @@ mb_training <- mb_training %>%
   )
 ```
 
-### Data Exploration 
+## Data Exploration 
 
-The first variable in the above table (INDEX) was dropped from the dataset due to the fact that it is mearly a row identifier, and has no impact on the target variable (TARGET_WINS).
+The first variable in the above table (INDEX) was dropped from the dataset due to the fact that it is merely a row identifier, and has no impact on the target variable (TARGET_WINS).
 
 ### Summary Statistics
 
@@ -129,92 +135,13 @@ long %>%
 The histograms provide additional confirmation that some of the variables are quite skewed. For example: Errors, Triples and Walks_AtBat. There are other variables with what look like bi-modal type of distributions. For example: StrikeOuts_AtBat.
 There are a couple of variables that look closer to the normal distribution. For example - the response variable Wins.
 
-
-### Data Preparation 
-
-#### Missing Data - Handling NA values
-
-We now dig deeper into the extent of missing data for the predictors.
-
-```{r missingDataPercentages, echo=FALSE}
-# Create a table of variables sorted by percentage of missing data. 
-missing_data <- colSums(mb_training %>% sapply(is.na))
-percentage_missing <- round(missing_data / nrow(mb_training) * 100, 2)
-missing_values_table <- sort(percentage_missing, decreasing = TRUE)
-
-missing_values_table %>%
-  kable(caption = 'Breakdown of Variables by Percentage of Missing Data') %>%
-  kable_styling()
-```
-
-
-91.61% percent of the rows are missing from the HitByPitch_AtBat variable, so we will remove this variable from the dataset completely. The percentage of missing data for the remaining variables with missing data is much less, and so excluding them from the final model could skew the results.
-
-
-```{r missingDataManipulation, echo=FALSE}
-# Drop the HitByPitch_AtBat variable from the dataset.
-mb_training <- mb_training %>% dplyr::select(-HitByPitch_AtBat)
-```
-
-
-We now need to deal with 2 more data issues:
-1) significant outliers
-2) missing values
-
-We could possibly drop rows with either of the 2 issues mentioned above, but then we may end up losing a fair amount of data. We therefore decided to remove the outliers for some of the more extreme cases, and then from the updated dataset, we imputed the missing values with the median of the respective predictor variable.
-
-The following columns look like they have significant outliers:
-- Walks_Allowed
-- BasesStolen
-- StrikeOuts
-- Hits_Allowed
-- Errors
-- Triples
-
-These are removed for the next analysis where they are greater than the IQR, with a summary of the updated data below.
-
-```{r outLiers, echo=FALSE, message=FALSE, warning=FALSE}
-# Remove outlier rows for the 6 predictor variables.
-mb_training_updated <- mb_training
-
-# Remove outliers - Method 2.
-for (n in c("Walks_Allowed", "BasesStolen", "StrikeOuts", "Hits_Allowed", "Errors", "Triples")) {
-  Q <- quantile(mb_training[,n], probs = c(.25, .75), na.rm = TRUE)
-  iqr <- IQR(mb_training[,n], na.rm = TRUE)
-  # Upper Range.
-  up <- Q[2] + 1.5 * iqr 
-  # Lower Range.
-  low <- Q[1] - 1.5 * iqr
-  mb_training_updated <- subset(mb_training_updated, mb_training_updated[,n] > (Q[1]-1.5 * iqr)&mb_training_updated[,n] < (Q[2] + 1.5 * iqr))
-}
-
-```
-
-
-```{r updatedDataSummary, echo=FALSE, message=FALSE, warning=FALSE, inlcude=FALSE}
-# Check the summary for the updated dataframe.
-summary(mb_training_updated)
-
-```
-
-```{r imputData, echo=FALSE, message=FALSE, warning=FALSE}
-# Impute missing values with the median value for each remaining column.
-mb_training_updated <- data.frame(sapply(mb_training_updated, function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x)))
-```
-
-
-```{r imputDataSummary, echo=FALSE, message=FALSE, warning=FALSE}
-# Check the summary for the updated dataframe.
-summary(mb_training_updated)
-```
-
-### Correlation between predictors, and between predictors and response variable
+### Feature Correlation
 We now check which of the predictors are more correlated with the response variable as a mechanism to select which variables to include in the linear regression model. We also check the correlation between the predictors, since we'd like to avoid multi-collinearity.
 
 ```{r correlationTable, echo=FALSE, message=FALSE, warning=FALSE}
 # Perform a correlation analysis on the data. In this analysis, we are only interested in the
 # correlation of the predicter variables and the "TARGET_WINS" variable.
-correlation_table <- cor(mb_training_updated, method = 'pearson', use = 'complete.obs')[,1]
+correlation_table <- cor(mb_training, method = 'pearson', use = 'complete.obs')[,1]
 
 # Remove the TARGET_WINS variable from the correlation table as it is redundant 
 # within the context of of our correlation analysis.
@@ -224,15 +151,12 @@ correlation_table %>%
   kable(caption = 'Correlation of Variables to Wins') %>% kable_styling()
 ```
 
-
-
 ```{r correlationCalculation, echo=FALSE, message=FALSE, warning=FALSE}
 # Calculate correlation between variables.
-mb_training_updated_corr_matrix <- mb_training_updated %>% cor() %>% round(2) %>% as.matrix()
-mb_training_updated_corr_matrix %>% kable() %>% kable_styling()
+mb_training_corr_matrix <- mb_training %>% cor() %>% round(2) %>% as.matrix()
+mb_training_corr_matrix %>% kable() %>% kable_styling()
 
 ```
-
 
 ```{r flattenMatrix, echo=FALSE, message=FALSE, warning=FALSE}
 # flattenCorrMatrix
@@ -252,7 +176,7 @@ flattenCorrMatrix <- function(cormat, pmat) {
 
 ```{r corSignificance, echo=FALSE, message=FALSE, warning=FALSE}
 # Another method to check correlations and their significance.
-corr.mat<-rcorr(as.matrix(mb_training_updated))
+corr.mat<-rcorr(as.matrix(mb_training))
 
 flattenCorrMatrix(corr.mat$r, corr.mat$P)%>% filter(row=='Wins') %>% arrange(-abs(cor))
 ```
@@ -263,15 +187,79 @@ Based on the p-values, we could exclude the following variables from the regress
 
 ```{r predictorsNormality, echo=FALSE, message=FALSE, warning=FALSE}
 # Run the Shapiro wilkes test for normality.
-do.call(rbind, lapply(mb_training_updated, function(x) shapiro.test(x)[c("statistic", "p.value")]))
+do.call(rbind, lapply(mb_training, function(x) shapiro.test(x)[c("statistic", "p.value")]))
 ```
 
 From the above, it looks like most of the predictors are close to normality.
 
 
-#### Model 1
+## Data Preparation 
 
-Model 1 includes the remaining variables in the dataset except for the one dropped earlier due to lots of missing values.
+### Missing Data - Handling NA Values
+
+We now dig deeper into the extent of missing data for the predictors.
+
+```{r missingDataPercentages, echo=FALSE}
+# Create a table of variables sorted by percentage of missing data. 
+missing_data <- colSums(mb_training %>% sapply(is.na))
+percentage_missing <- round(missing_data / nrow(mb_training) * 100, 2)
+missing_values_table <- sort(percentage_missing, decreasing = TRUE)
+
+missing_values_table %>%
+  kable(caption = 'Breakdown of Variables by Percentage of Missing Data') %>%
+  kable_styling()
+```
+
+
+91.61% percent of the rows are missing from the HitByPitch_AtBat variable, so we will remove this variable from the dataset completely. The percentage of missing data for the remaining variables with missing data is much less, and so excluding them from the final model could skew the results.
+
+
+We now need to deal with 2 more data issues:
+1) significant outliers
+2) missing values
+
+We could possibly drop rows with either of the 2 issues mentioned above, but then we may end up losing a fair amount of data. We therefore decided to remove the outliers for some of the more extreme cases, and then from the updated dataset, we imputed the missing values with the median of the respective predictor variable.
+
+The following columns look like they have significant outliers:
+- Walks_Allowed
+- BasesStolen
+- StrikeOuts
+- Hits_Allowed
+- Errors
+- Triples
+
+These are removed for the next analysis where they are greater than the IQR, with a summary of the updated data below.
+
+```{r dataPrep, echo=FALSE, message=FALSE, warning=FALSE}
+#remove field with mostly missing vals
+mb_training_updated <- mb_training %>% dplyr::select(-HitByPitch_AtBat)
+
+# Remove outlier rows for the 6 predictor variables.
+for (n in c("Walks_Allowed", "BasesStolen", "StrikeOuts", "Hits_Allowed", "Errors", "Triples")) {
+  Q <- quantile(mb_training[,n], probs = c(.25, .75), na.rm = TRUE)
+  iqr <- IQR(mb_training[,n], na.rm = TRUE)
+  # Upper Range.
+  up <- Q[2] + 1.5 * iqr 
+  # Lower Range.
+  low <- Q[1] - 1.5 * iqr
+  mb_training_updated <- subset(mb_training_updated, mb_training_updated[,n] > (Q[1]-1.5 * iqr)&mb_training_updated[,n] < (Q[2] + 1.5 * iqr))
+}
+
+# Impute missing values with the median value for each remaining column.
+mb_training_updated <- data.frame(sapply(mb_training_updated, function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x)))
+```
+
+
+```{r imputDataSummary, echo=FALSE, message=FALSE, warning=FALSE}
+# Check the summary for the updated dataframe.
+summary(mb_training_updated)
+```
+
+
+## Models
+### Model 1
+
+Model 1 includes the remaining variables in the dataset except for the one dropped earlier due to lots of missing values (HitByPitch_AtBat).
 
 ```{r ModelOne, echo=FALSE, message=FALSE, warning=FALSE}
 model_one <- lm(Wins ~ Hits + Doubles + Triples + HomeRuns +
