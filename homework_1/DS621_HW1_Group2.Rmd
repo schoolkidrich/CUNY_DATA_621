@@ -7,7 +7,7 @@ output:
   html_document: default
 ---
 
-## Group 2 members: Alice Friedman, Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett.
+**Group 2 members:** _Alice Friedman, Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -48,7 +48,7 @@ The purpose of the analysis is to find which of the predictors have significant 
 The method used is a multiple linear regression model on the training data to predict the number of wins for the team.
 
 
-```{r load_training_data, message=FALSE, echo=FALSE}
+```{r load_training_data, echo=FALSE, message=FALSE, warning=FALSE}
 # Load in the training data.
 url = "https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-training-data.csv"
 mb_training <- read.csv(url)
@@ -59,7 +59,7 @@ mb_training <- subset(mb_training, select = -c(INDEX))
 ```
 
 
-```{r renameColumns, echo=FALSE, message=FALSE}
+```{r renameColumns, echo=FALSE, message=FALSE, warning=FALSE}
 # Rename the columns to be more intuitive.
 mb_training <- mb_training %>%
   rename_with(~ gsub("TEAM_", "", .x)) %>%
@@ -92,13 +92,13 @@ The first variable in the above table (INDEX) was dropped from the dataset due t
 
 The first step in our data exploration was to compile summary statistics to give us some insight into the data prior to preparing the data for modeling. To make the variable names more readable, we removed the "TEAM_" prefix from each variable.
 
-```{r summaryData, warning=FALSE, message=FALSE}
+```{r summaryData, warning=FALSE, message=FALSE, echo=FALSE}
 # Summarize the data.
 summary(mb_training)
 ```
 
 From the above, we see that there are 15 predictors and 1 response variable (Wins). Of the predictors, 6 have missing values.
-We now plot boxplots for all the variables to get a sense of outliers.
+We then plotted boxplots for all the variables to get a sense of outliers.
 
 ``` {r boxPlots, warning=FALSE, message=FALSE, echo=FALSE}
 # Plot boxplots for all variables.
@@ -112,7 +112,7 @@ From the box plots, we can see that quite a few predictors are very skewed in na
 
 ### Variable Distributions
 
-Plot the distributions of all the variables to check the shape visually and get a high-level, intuitive sense of normality. We plot the distributions of the features below.
+We created distribution plots for all the variables to check their shape visually and get a high-level, intuitive sense of normality.
 
 ```{r dataDistributions, error=FALSE, warning=FALSE, message=FALSE, echo=FALSE}
 # Wins.
@@ -289,7 +289,7 @@ missing_values_table %>%
 ```
 
 
-91.61% percent of the rows are missing from the HitByPitch_AtBat variable, so we will remove this variable from the dataset completely. The percentage of missing data for the remaining variables with missing data is much less, and so excluding them from the final model could skew the results. Therefore, rather than dropping the variables completely, we will impute the missing values with the median value of the variable column in question.
+91.61% percent of the rows are missing from the HitByPitch_AtBat variable, so we will remove this variable from the dataset completely. The percentage of missing data for the remaining variables with missing data is much less, and so excluding them from the final model could skew the results.
 
 
 ```{r missingDataManipulation, echo=FALSE}
@@ -302,7 +302,7 @@ We now need to deal with 2 more data issues:
 1) significant outliers
 2) missing values
 
-We could possibly drop rows with either of the 2 issues mentioned above, but then we may end up losing a fair amount of data. So we decide to remove the outliers for some of the more extreme cases, and then from the updated dataset, we impute the missing values with the median of the respective predictor variable.
+We could possibly drop rows with either of the 2 issues mentioned above, but then we may end up losing a fair amount of data. We therefore decided to remove the outliers for some of the more extreme cases, and then from the updated dataset, we imputed the missing values with the median of the respective predictor variable.
 
 The following columns look like they have significant outliers:
 - Walks_Allowed
@@ -349,10 +349,10 @@ mb_training_updated <- data.frame(sapply(mb_training_updated, function(x) ifelse
 summary(mb_training_updated)
 ```
 
-### Correlation between predictors and between predictors and response variable
+### Correlation between predictors, and between predictors and response variable
 We now check which of the predictors are more correlated with the response variable as a mechanism to select which variables to include in the linear regression model. We also check the correlation between the predictors, since we'd like to avoid multi-collinearity.
 
-```{r correlationTable}
+```{r correlationTable, echo=FALSE, message=FALSE, warning=FALSE}
 # Perform a correlation analysis on the data. In this analysis, we are only interested in the
 # correlation of the predicter variables and the "TARGET_WINS" variable.
 correlation_table <- cor(mb_training_updated, method = 'pearson', use = 'complete.obs')[,1]
@@ -367,7 +367,7 @@ correlation_table %>%
 
 
 
-```{r correlationCalculation}
+```{r correlationCalculation, echo=FALSE, message=FALSE, warning=FALSE}
 # Calculate correlation between variables.
 mb_training_updated_corr_matrix <- mb_training_updated %>% cor() %>% round(2) %>% as.matrix()
 mb_training_updated_corr_matrix %>% kable() %>% kable_styling()
@@ -414,7 +414,7 @@ From the above, it looks like most of the predictors are close to normality.
 
 Model 1 includes the remaining variables in the dataset except for the one dropped earlier due to lots of missing values.
 
-```{r ModelOne}
+```{r ModelOne, echo=FALSE, message=FALSE, warning=FALSE}
 model_one <- lm(Wins ~ Hits + Doubles + Triples + HomeRuns +
                 Walks_AtBat + BasesStolen + Hits_Allowed +
                 HomeRuns_Allowed + Errors + Walks_Allowed + StrikeOuts +  
@@ -465,7 +465,7 @@ ggplot(data = model_one) + stat_qq(aes(sample = .stdresid)) + geom_abline()
 
 Model 2 uses stepwise regression on the variables in Model 1 to create the best performing model.
 
-```{r ModelTwo}
+```{r ModelTwo, echo=FALSE, message=FALSE, warning=FALSE}
 model_two <- stepAIC(model_one, direction = 'both', trace = FALSE)
 ```
 
@@ -573,14 +573,14 @@ There is not much change in the scatter plot of the residuals with the fitted va
 
 For our final model (Model 4), we do a Box Cox transformation on the response variable from Model 1 to see if it provides a better-fitting model. We plot the lambda and based on the plot, a lambda value of around 1.35 seems like the best value.
 
-```{r boxCoxMethod}
+```{r boxCoxMethod, echo=FALSE, message=FALSE, warning=FALSE}
 # Box Cox method.
 MASS::boxcox(model_one, lambda = seq(0.75, 1.6, by = 0.05), plotit = TRUE)
 
 ```
 
 
-```{r modelFour}
+```{r modelFour, echo=FALSE, message=FALSE, warning=FALSE}
 # Fit a model using a lambda value of 1.35 for the response variable.
 
 model_cox = lm((((Wins ^ 1.35) - 1)/ 1.35) ~ Hits + Doubles + Triples + HomeRuns + Walks_AtBat + 
@@ -640,7 +640,7 @@ We decide to use model one for making predictions for the test dataset, since th
 
 We now predict the number of wins for the test data using model one.
 
-```{r load_test_data, message=FALSE}
+```{r load_test_data, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Load in the test data.
 url2 <- 'https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-evaluation-data.csv'
@@ -653,7 +653,7 @@ mb_test <- subset(mb_test, select = -c(INDEX))
 ```
 
 
-```{r testDataSummary, message=FALSE}
+```{r testDataSummary, echo=FALSE, message=FALSE, warning=FALSE}
 # Summarize the test data.
 summary(mb_test)
 ```
@@ -661,8 +661,7 @@ summary(mb_test)
 
 We now rename the columns for this test dataset to be more intuitive.
 
-```{r renameTestDataColumns}
-
+```{r renameTestDataColumns, echo=FALSE, message=FALSE, warning=FALSE}
 mb_test <- mb_test %>%
   rename_with(~ gsub("TEAM_", "", .x)) %>%
   rename_with(stringr::str_to_title) %>%
@@ -697,7 +696,7 @@ mb_test_updated <- data.frame(sapply(mb_test, function(x) ifelse(is.na(x), media
 
 We now check the summary to see if the missing values have been filled.
 
-```{r summary}
+```{r summary, echo=FALSE, message=FALSE, warning=FALSE}
 # Summarize the test data.
 summary(mb_test_updated)
 ```
