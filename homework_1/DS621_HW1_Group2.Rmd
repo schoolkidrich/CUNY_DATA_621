@@ -2,9 +2,9 @@
 title: "DATA 621: Homework 1 (Group 2)"
 subtitle: "Moneyball Linear Regression"
 output:
-  html_document: default
   pdf_document:
     extra_dependencies: ["geometry", "multicol", "multirow", "xcolor"]
+  html_document: default
 ---
 
 ## Group 2 members: Alice Friedman, Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett.
@@ -28,7 +28,7 @@ library(ggpubr)
 library(car)
 ```
 
-## Introduction to Assignment Objective
+## Assignment Objective
 
 In this assignment, we analyze and model a baseball dataset containing multi-year game statistics for different teams. The objective is to build a multiple linear regression model on the training data to predict the number of wins for the team. We can only use the variables given to us (or variables that we derive from the variables provided).
 
@@ -47,29 +47,9 @@ The purpose of the analysis is to find which of the predictors have significant 
 ## Method
 The method used is a multiple linear regression model on the training data to predict the number of wins for the team.
 
-## Setup
 
-This analysis requires installation of the following packages: 
-
-- MASS
-- tidyverse
-- dplyr
-- reshape
-- kableExtra
-- corrplot
-- ggplot
-- Hmisc
-- PerformanceAnalytics
-- GGally
-- ggpubr
-- car
-
-
-### Load the training data.
-
-```{r load_training_data, message=FALSE}
+```{r load_training_data, message=FALSE, echo=FALSE}
 # Load in the training data.
-
 url = "https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-training-data.csv"
 mb_training <- read.csv(url)
 
@@ -78,11 +58,9 @@ mb_training <- subset(mb_training, select = -c(INDEX))
 
 ```
 
-### Rename Columns
-
-Rename the columns to be more intuitive.
 
 ```{r renameColumns, echo=FALSE, message=FALSE}
+# Rename the columns to be more intuitive.
 mb_training <- mb_training %>%
   rename_with(~ gsub("TEAM_", "", .x)) %>%
   rename_with(stringr::str_to_title) %>%
@@ -114,17 +92,16 @@ The first variable in the above table (INDEX) was dropped from the dataset due t
 
 The first step in our data exploration was to compile summary statistics to give us some insight into the data prior to preparing the data for modeling. To make the variable names more readable, we removed the "TEAM_" prefix from each variable.
 
-```{r summaryData, echo=FALSE}
-# Summarize the data
+```{r summaryData, warning=FALSE, message=FALSE}
+# Summarize the data.
 summary(mb_training)
-
 ```
 
 From the above, we see that there are 15 predictors and 1 response variable (Wins). Of the predictors, 6 have missing values.
 We now plot boxplots for all the variables to get a sense of outliers.
 
-``` {r boxPlots, warning=FALSE, message=FALSE}
-# Plot boxplots for all variables
+``` {r boxPlots, warning=FALSE, message=FALSE, echo=FALSE}
+# Plot boxplots for all variables.
 long <- mb_training %>% as.data.frame() %>% melt()
 
 long %>%
@@ -137,7 +114,7 @@ From the box plots, we can see that quite a few predictors are very skewed in na
 
 Plot the distributions of all the variables to check the shape visually and get a high-level, intuitive sense of normality. We plot the distributions of the features below.
 
-```{r dataDistributions, error=FALSE, warning=FALSE, message=FALSE}
+```{r dataDistributions, error=FALSE, warning=FALSE, message=FALSE, echo=FALSE}
 # Wins.
 ggplot(mb_training, aes(x = Wins))  +
   geom_histogram(color = 'black', fill = 'gray', bins = 30) +
@@ -362,17 +339,14 @@ summary(mb_training_updated)
 ```
 
 ```{r imputData, echo=FALSE, message=FALSE, warning=FALSE}
-# Impute missing values with the median value for each remaining column
-
+# Impute missing values with the median value for each remaining column.
 mb_training_updated <- data.frame(sapply(mb_training_updated, function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x)))
-
 ```
 
 
 ```{r imputDataSummary, echo=FALSE, message=FALSE, warning=FALSE}
-# Check the summary for the updated dataframe
+# Check the summary for the updated dataframe.
 summary(mb_training_updated)
-
 ```
 
 ### Correlation between predictors and between predictors and response variable
@@ -403,8 +377,8 @@ mb_training_updated_corr_matrix %>% kable() %>% kable_styling()
 
 ```{r flattenMatrix, echo=FALSE, message=FALSE, warning=FALSE}
 # flattenCorrMatrix
-# cormat : matrix of the correlation coefficients
-# pmat : matrix of the correlation p-values
+# cormat : matrix of the correlation coefficients.
+# pmat : matrix of the correlation p-values.
 flattenCorrMatrix <- function(cormat, pmat) {
   ut <- upper.tri(cormat)
   data.frame(
@@ -429,7 +403,7 @@ Based on the p-values, we could exclude the following variables from the regress
 ### Check for normality of predictors
 
 ```{r predictorsNormality, echo=FALSE, message=FALSE, warning=FALSE}
-# Run the Shapiro wilkes test for normality
+# Run the Shapiro wilkes test for normality.
 do.call(rbind, lapply(mb_training_updated, function(x) shapiro.test(x)[c("statistic", "p.value")]))
 ```
 
@@ -480,9 +454,6 @@ We plot the residuals versus the fitted values - it shows that the residuals are
 ggplot(data = model_one, aes(x = .fitted, y = .resid)) +
   geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
   geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
-
-#qqnorm(resid(model_one), main = "Normal Q-Q Plot", col = "darkgrey")
-#qqline(resid(model_one), col = "dodgerblue", lwd = 2)
 
 ggplot(data = model_one, aes(x = .resid)) + geom_histogram() + xlab("Residuals")
 
@@ -547,7 +518,6 @@ We also include certain variables derived on the fly in the model - for example:
 
 ```{r newVariables, include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
 # Derive 2 new variables for Singles and Home run difference.
-
 mb_training_new <- mb_training_updated %>% mutate(Singles = Hits - Doubles - Triples - HomeRuns)
 
 mb_training_new <- mb_training_new %>% mutate(Homeruns_diff = HomeRuns_Allowed - HomeRuns)
@@ -611,7 +581,7 @@ MASS::boxcox(model_one, lambda = seq(0.75, 1.6, by = 0.05), plotit = TRUE)
 
 
 ```{r modelFour}
-# Fit a model using a lambda value of 1.35 for the response variable
+# Fit a model using a lambda value of 1.35 for the response variable.
 
 model_cox = lm((((Wins ^ 1.35) - 1)/ 1.35) ~ Hits + Doubles + Triples + HomeRuns + Walks_AtBat + 
     BasesStolen + Hits_Allowed + HomeRuns_Allowed + Errors + 
@@ -672,7 +642,7 @@ We now predict the number of wins for the test data using model one.
 
 ```{r load_test_data, message=FALSE}
 
-# Load in the test data.}
+# Load in the test data.
 url2 <- 'https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-evaluation-data.csv'
 
 mb_test <- read.csv(url2)
@@ -684,7 +654,7 @@ mb_test <- subset(mb_test, select = -c(INDEX))
 
 
 ```{r testDataSummary, message=FALSE}
-# Summarize the test data
+# Summarize the test data.
 summary(mb_test)
 ```
 ### Rename Columns
@@ -718,7 +688,7 @@ mb_test <- mb_test %>%
 We impute the missing values with the median
 
 ```{r include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
-# Impute missing values with the median value for each column
+# Impute missing values with the median value for each column.
 
 mb_test_updated <- data.frame(sapply(mb_test, function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x)))
 
@@ -728,7 +698,7 @@ mb_test_updated <- data.frame(sapply(mb_test, function(x) ifelse(is.na(x), media
 We now check the summary to see if the missing values have been filled.
 
 ```{r summary}
-# Summarize the test data
+# Summarize the test data.
 summary(mb_test_updated)
 ```
 
@@ -736,7 +706,7 @@ summary(mb_test_updated)
 
 ```{r include=FALSE, echo=FALSE, message=FALSE, warning=FALSE}
 
-# Predicting Wins in the test data and looking at the distribution 
+# Predicting Wins in the test data and looking at the distribution. 
 mb_test_updated$predicted_wins <- predict(model_one, type = 'response', newdata = mb_test_updated)
 
 ggplot(data = mb_test_updated, aes(x = predicted_wins))  +
@@ -749,7 +719,7 @@ ggplot(data = mb_test_updated, aes(x = predicted_wins))  +
 We create a table for the predicted wins.
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
-# creating a table of prediction and confidence intervals
+# creating a table of prediction and confidence intervals.
 test_data <- predict(model_one, newdata = mb_test_updated, interval = 'prediction')
 summary(test_data)
 ```
@@ -775,3 +745,442 @@ https://rstatisticsblog.com/data-science-in-action/data-preprocessing/six-amazin
 # Load Libraries and Disable Scientific Notation for Readability Purposes 
 # =====================================================================================
 
+knitr::opts_chunk$set(echo = TRUE)
+# Disable scientific numbers for readability purposes.
+options(scipen = 999)
+
+library(MASS)
+library(tidyverse)
+library(dplyr)
+library(reshape2)
+library(kableExtra)
+library(corrplot)
+library(ggplot2)
+library(Hmisc)
+library(PerformanceAnalytics)
+library(GGally)
+library(ggpubr)
+library(car)
+
+
+# =====================================================================================
+# Load The Dataset and Summarize the Data
+# =====================================================================================
+
+# Load in the training data.
+url = "https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/project_1/moneyball-training-data.csv"
+mb_training <- read.csv(url)
+
+# Remove the INDEX variable as it is of no value in the data evaluation.
+mb_training <- subset(mb_training, select = -c(INDEX))
+
+# Summarize the test data.
+summary(mb_training)
+
+
+# =====================================================================================
+# Rename the Variables to be More Intuitive
+# =====================================================================================
+
+# Rename the columns to be more intuitive.
+mb_training <- mb_training %>%
+  rename_with(~ gsub("TEAM_", "", .x)) %>%
+  rename_with(stringr::str_to_title) %>%
+  dplyr::rename(
+    Wins = Target_wins,
+    Hits = Batting_h,
+    Doubles = Batting_2b,
+    Triples = Batting_3b,
+    HomeRuns = Batting_hr,
+    Walks_AtBat = Batting_bb,
+    StrikeOuts_AtBat = Batting_so,
+    BasesStolen = Baserun_sb,
+    OutStealingBases = Baserun_cs,
+    Hits_Allowed = Pitching_h,
+    HitByPitch_AtBat = Batting_hbp,
+    Errors = Fielding_e,
+    HomeRuns_Allowed = Pitching_hr,
+    Walks_Allowed = Pitching_bb,
+    StrikeOuts = Pitching_so,
+    DoublePlays = Fielding_dp
+  )
+
+
+# =====================================================================================
+# Box Plots
+# =====================================================================================
+
+# Plot boxplots for all variables.
+long <- mb_training %>% as.data.frame() %>% melt()
+
+long %>%
+  ggplot(aes(x=value)) + geom_boxplot() + facet_wrap(~variable, scales = 'free')
+
+
+# =====================================================================================
+# Distribution Plots
+# =====================================================================================
+
+# Wins.
+ggplot(mb_training, aes(x = Wins))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(Wins)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 50, y = 125,
+                 label = str_replace_all(toString(summary(mb_training['Wins'])), ',', '\n')
+                 )) +
+  labs(title = 'Wins Histogram Plot', y = 'Count', x = 'Wins')
+
+# Hits.
+ggplot(mb_training, aes(x = Hits))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(Hits)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 1250, y = 100,
+                 label = str_replace_all(toString(summary(mb_training['Hits'])), ',', '\n')
+                 )) +
+  labs(title = 'Hits Histogram Plot', y = 'Count', x = 'Base Hits')
+
+# Doubles.
+ggplot(data = mb_training, aes(x = Doubles))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(Doubles)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 160, y = 100,
+                 label = str_replace_all(toString(summary(mb_training['Doubles'])), ',', '\n')
+                 )) +
+  labs(title = 'Doubles Histogram Plot', y = 'Count', x = 'Doubles')
+
+
+# Triples.
+ggplot(data = mb_training, aes(x = Triples))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(Triples)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 75, y = 130,
+                 label = str_replace_all(toString(summary(mb_training['Triples'])), ',', '\n')
+                 )) +
+  labs(title = 'Triples Histogram Plot', y = 'Count', x = 'Triples')
+
+
+# Homeruns.
+ggplot(data = mb_training, aes(x = HomeRuns))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(HomeRuns)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 25, y = 90,
+                 label = str_replace_all(toString(summary(mb_training['HomeRuns'])), ',', '\n')
+                 )) +
+  labs(title = 'Homeruns Histogram Plot', y = 'Count', x = 'Homeruns')
+
+
+# Walks.
+ggplot(data = mb_training, aes(x = Walks_AtBat))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(Walks_AtBat)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 380, y = 100,
+                 label = str_replace_all(toString(summary(mb_training['Walks_AtBat'])), ',', '\n')
+                 )) +
+  labs(title = 'Walks Histogram Plot', y = 'Count', x = 'Walks')
+
+
+# Strike Out by Batters.
+ggplot(data = mb_training, aes(x = StrikeOuts_AtBat))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(StrikeOuts_AtBat)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 380, y = 100,
+                 label = str_replace_all(toString(summary(mb_training['StrikeOuts_AtBat'])), ',', '\n')
+                 )) +
+  labs(title = 'Strike Out by Batters Histogram Plot', y = 'Count', x = 'Strike Out by Batters')
+
+
+# Stolen Bases.
+ggplot(data = mb_training, aes(x = BasesStolen))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(BasesStolen)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 200, y = 100,
+                 label = str_replace_all(toString(summary(mb_training['BasesStolen'])), ',', '\n')
+                 )) +
+  labs(title = 'Stolen Bases Histogram Plot', y = 'Count', x = 'Stolen Bases')
+
+
+# Hits Allowed.
+ggplot(data = mb_training, aes(x = Hits_Allowed))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(Hits_Allowed)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 1250, y = 100,
+                 label = str_replace_all(toString(summary(mb_training['Hits_Allowed'])), ',', '\n')
+                 )) +
+  labs(title = 'Hits Allowed Histogram Plot', y = 'Count', x = 'Hits Allowed')
+
+
+# Homeruns Allowed.
+ggplot(data = mb_training, aes(x = HomeRuns_Allowed))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(HomeRuns_Allowed)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 30, y = 90,
+                 label = str_replace_all(toString(summary(mb_training['HomeRuns_Allowed'])), ',', '\n')
+                 )) +
+  labs(title = 'Homeruns Allowed Histogram Plot', y = 'Count', x = 'Homeruns Allowed')
+
+
+# Walks Allowed.
+ggplot(data = mb_training, aes(x = Walks_Allowed))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(Walks_Allowed)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 375, y = 100,
+                 label = str_replace_all(toString(summary(mb_training['Walks_Allowed'])), ',', '\n')
+                 )) +
+  labs(title = 'Walks Allowed Histogram Plot', y = 'Count', x = 'Walks Allowed')
+
+
+# Strikeouts by Pitchers.
+ggplot(data = mb_training, aes(x = StrikeOuts))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(StrikeOuts)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 425, y = 100,
+                 label = str_replace_all(toString(summary(mb_training['StrikeOuts'])), ',', '\n')
+                 )) +
+  labs(title = 'Strikeouts by Pitchers Histogram Plot', y = 'Count', x = 'Strikeouts by Pitchers')
+
+
+# Errors.
+ggplot(data = mb_training, aes(x = Errors))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(Errors)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 225, y = 100,
+                 label = str_replace_all(toString(summary(mb_training['Errors'])), ',', '\n')
+                 )) +
+  labs(title = 'Errors Histogram Plot', y = 'Count', x = 'Errors')
+
+# Double Plays.
+ggplot(data = mb_training, aes(x = DoublePlays))  +
+  geom_histogram(color = 'black', fill = 'gray', bins = 30) +
+  geom_vline(aes(xintercept = mean(DoublePlays)),
+             linetype = 'dashed', size = 2, color = 'blue') +
+  geom_label(aes(x = 110, y = 100,
+                 label = str_replace_all(toString(summary(mb_training['DoublePlays'])), ',', '\n')
+                 )) +
+  labs(title = 'Double Plays Histogram Plot', y = 'Count', x = 'Double Plays')
+
+
+# =====================================================================================
+# Missing Data
+# =====================================================================================
+
+# Create a table of variables sorted by percentage of missing data. 
+missing_data <- colSums(mb_training %>% sapply(is.na))
+percentage_missing <- round(missing_data / nrow(mb_training) * 100, 2)
+missing_values_table <- sort(percentage_missing, decreasing = TRUE)
+
+missing_values_table %>%
+  kable(caption = 'Breakdown of Variables by Percentage of Missing Data') %>%
+  kable_styling()
+
+# Drop the HitByPitch_AtBat variable from the dataset.
+mb_training <- mb_training %>% dplyr::select(-HitByPitch_AtBat)
+
+# =====================================================================================
+# Handle Outliers
+# =====================================================================================
+
+# Remove outlier rows for the 6 predictor variables.
+mb_training_updated <- mb_training
+
+# Remove outliers - Method 2.
+for (n in c("Walks_Allowed", "BasesStolen", "StrikeOuts", "Hits_Allowed", "Errors", "Triples")) {
+  Q <- quantile(mb_training[,n], probs = c(.25, .75), na.rm = TRUE)
+  iqr <- IQR(mb_training[,n], na.rm = TRUE)
+  # Upper Range.
+  up <- Q[2] + 1.5 * iqr 
+  # Lower Range.
+  low <- Q[1] - 1.5 * iqr
+  mb_training_updated <- subset(mb_training_updated, mb_training_updated[,n] > (Q[1]-1.5 * iqr)&mb_training_updated[,n] < (Q[2] + 1.5 * iqr))
+}
+
+# Check the summary for the updated dataframe.
+summary(mb_training_updated)
+
+# Impute missing values with the median value for each remaining column.
+mb_training_updated <- data.frame(sapply(mb_training_updated, function(x) ifelse(is.na(x), median(x, na.rm = TRUE), x)))
+
+# Check the summary for the updated dataframe.
+summary(mb_training_updated)
+
+# =====================================================================================
+# Data Correlation
+# =====================================================================================
+
+# Perform a correlation analysis on the data. In this analysis, we are only interested in the
+# correlation of the predicter variables and the "TARGET_WINS" variable.
+correlation_table <- cor(mb_training_updated, method = 'pearson', use = 'complete.obs')[,1]
+
+# Remove the TARGET_WINS variable from the correlation table as it is redundant 
+# within the context of of our correlation analysis.
+correlation_table <- correlation_table[-c(1)]
+
+correlation_table %>%
+  kable(caption = 'Correlation of Variables to Wins') %>% kable_styling()
+
+# Calculate correlation between variables.
+mb_training_updated_corr_matrix <- mb_training_updated %>% cor() %>% round(2) %>% as.matrix()
+mb_training_updated_corr_matrix %>% kable() %>% kable_styling()
+
+# flattenCorrMatrix
+# cormat : matrix of the correlation coefficients.
+# pmat : matrix of the correlation p-values.
+flattenCorrMatrix <- function(cormat, pmat) {
+  ut <- upper.tri(cormat)
+  data.frame(
+    row = rownames(cormat)[row(cormat)[ut]],
+    column = rownames(cormat)[col(cormat)[ut]],
+    cor  =(cormat)[ut],
+    p = pmat[ut]
+    )
+}
+
+# Another method to check correlations and their significance.
+corr.mat<-rcorr(as.matrix(mb_training_updated))
+
+flattenCorrMatrix(corr.mat$r, corr.mat$P)%>% filter(row=='Wins') %>% arrange(-abs(cor))
+
+
+# =====================================================================================
+# Check Normality of Predictors
+# =====================================================================================
+
+# Run the Shapiro wilkes test for normality.
+do.call(rbind, lapply(mb_training_updated, function(x) shapiro.test(x)[c("statistic", "p.value")]))
+
+
+# =====================================================================================
+# Model 1
+# =====================================================================================
+
+model_one <- lm(Wins ~ Hits + Doubles + Triples + HomeRuns +
+                Walks_AtBat + BasesStolen + Hits_Allowed +
+                HomeRuns_Allowed + Errors + Walks_Allowed + StrikeOuts +  
+                StrikeOuts_AtBat + OutStealingBases + DoublePlays,
+                mb_training_updated)
+
+# Model 1 summary stats.
+summary(model_one)
+
+# Model 1 R Squared.
+summary(model_one)$r.squared
+
+# Model 1 Confidence Intervals.
+confint(model_one)
+
+# Model 1 plots - residuals vs fitted values, residuals distribution.
+ggplot(data = model_one, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
+
+ggplot(data = model_one, aes(x = .resid)) + geom_histogram() + xlab("Residuals")
+
+ggplot(data = model_one) + stat_qq(aes(sample = .stdresid)) + geom_abline()
+
+
+# =====================================================================================
+# Model 2
+# =====================================================================================
+
+# Model 2 uses stepwise regression on the variables in Model 1.
+model_two <- stepAIC(model_one, direction = 'both', trace = FALSE)
+
+# Model 2 summary stats.
+summary(model_two)
+
+# Model 2 plots - residuals vs fitted values, residuals distribution.
+ggplot(data = model_two, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
+
+ggplot(data = model_two, aes(x = .resid)) + geom_histogram() + xlab("Residuals")
+
+ggplot(data = model_two) + stat_qq(aes(sample = .stdresid)) + geom_abline()
+
+
+# =====================================================================================
+# Model 3
+# =====================================================================================
+
+# Derive 2 new variables for Singles and Home run difference.
+mb_training_new <- mb_training_updated %>% mutate(Singles = Hits - Doubles - Triples - HomeRuns)
+mb_training_new <- mb_training_new %>% mutate(Homeruns_diff = HomeRuns_Allowed - HomeRuns)
+
+model_three <- lm(Wins ~ Hits + Doubles + Triples + Walks_AtBat +
+                  BasesStolen + Hits_Allowed + Errors + Walks_Allowed +
+                  StrikeOuts + Singles + Homeruns_diff + StrikeOuts_AtBat +
+                  I(HomeRuns_Allowed/HomeRuns) + I(HomeRuns_Allowed*HomeRuns) + 
+                  I(1/DoublePlays) + I(OutStealingBases^3),
+                  mb_training_new)
+
+# Model 3 summary stats.
+summary(model_three)
+
+# Model 3 R-Squared.
+summary(model_three)$r.squared
+
+# Model 3 confidence intervals.
+confint(model_three)
+
+
+# Model 3 plots - residuals vs fitted values, residuals distribution.
+ggplot(data = model_three, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
+
+ggplot(data = model_three, aes(x = .resid)) + geom_histogram() + xlab("Residuals")
+
+ggplot(data = model_three) + stat_qq(aes(sample = .stdresid)) + geom_abline()
+
+
+# =====================================================================================
+# Model 4
+# =====================================================================================
+
+# Model 4 - Box Cox method.
+MASS::boxcox(model_one, lambda = seq(0.75, 1.6, by = 0.05), plotit = TRUE)
+
+# Fit a model using a lambda value of 1.35 for the response variable.
+model_cox = lm((((Wins ^ 1.35) - 1)/ 1.35) ~ Hits + Doubles + Triples + HomeRuns + Walks_AtBat + 
+    BasesStolen + Hits_Allowed + HomeRuns_Allowed + Errors + 
+    Walks_Allowed + StrikeOuts + StrikeOuts_AtBat + OutStealingBases + 
+    DoublePlays,
+    mb_training_updated)
+
+# Model 4 summary stats.
+summary(model_cox)
+
+# Model 4 R Squared.
+summary(model_cox)$r.squared
+
+# Model 4 confidence intervals.
+confint(model_cox)
+
+
+# Model 4 plots - residuals vs fitted values, residuals distribution.
+ggplot(data = model_cox, aes(x = .fitted, y = .resid)) +
+  geom_point() + geom_hline(yintercept = 0, linetype = "dashed") +
+  geom_smooth(se = FALSE) + xlab("Fitted values") + ylab("Residuals")
+
+ggplot(data = model_cox, aes(x = .resid)) + geom_histogram() + xlab("Residuals")
+
+ggplot(data = model_cox) + stat_qq(aes(sample = .stdresid)) + geom_abline()
+
+
+# =====================================================================================
+# Model Selection
+# =====================================================================================
+
+```
