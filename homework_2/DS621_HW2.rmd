@@ -1,0 +1,92 @@
+---
+title: "HW 2"
+author: "Group 2"
+date: "3/10/2021"
+output: 
+  pdf_document:
+    toc: TRUE
+    toc_levels: TRUE
+    
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(caret)
+
+```
+
+##Setup
+
+
+```{r load-data}
+data_raw <- read.csv("https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_2/classification-output-data.csv")
+
+table(data_raw) #this doesn't work? anyone know why?
+
+```
+
+
+## Functions
+
+```{}
+```
+
+### Accuracy
+```{r}
+
+accuracy <- function(){
+
+}
+
+accuracy()
+
+```
+### Classification Error Rate
+```{r}
+
+class_error_rate <- function(){
+  
+}
+
+```
+### Precision
+```{r}
+
+precision <- function(){
+  
+}
+
+```
+### Sensitivty
+```{r}
+#note: there is a built in function in package caret called sensitivity
+sensitivity <- function(){
+  
+} 
+```
+### Specificity
+```{r}
+
+specificity <- function(){
+  
+}
+```
+### FI Score
+```{r}
+#should be based on the previous functions, so something like the below...
+fi_score <- function(x){
+  2*sensitivity(x)*precision(x)/(precision(x) + sensitivity(x))
+}
+```
+###
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
