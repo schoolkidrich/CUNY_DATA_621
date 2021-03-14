@@ -63,6 +63,13 @@ dplyr::rename(confusion_matrix_table, Predicted = scored.class, Actual = class) 
 
 ## Functions
 
+```{r, selectDataForFunctions}
+# We only need the class and scored.class variables from the dataset so we
+# extract them and leave everything else.
+data <- data_raw %>%
+  select(class, scored.class)
+```
+
 ### Accuracy
 
 _Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the accuracy of the_ _predictions_.
@@ -98,9 +105,29 @@ $$Precision = \frac{TP}{TP + FP}$$
 
 
 ```{r, predictionPrecisionFunction}
-precision <- function() {
-  
+#' Precision
+#'
+#' Given a dataset of actual and predicted classifications,
+#' returns the precision of the predictions.
+#'
+#' @param data A dataset of actual and predicted classifications.
+#'
+#' @return Precision of predictions as a numeric value rounded to 2 decimal places.
+precision <- function(data) {
+  # Calculate the total number of true positives in the dataset.
+  true_positive <- sum(data$class == 1 & data$scored.class == 1)
+
+  # Calculate the total number of false positives in the dataset.
+  false_positive <- sum(data$class == 0 & data$scored.class == 1)
+
+  # Perform the precision calculation and round the result to 2 decimal places.
+  prediction_precision <- round(true_positive / (true_positive + false_positive), 2)
+
+  return(prediction_precision)
 }
+
+# Call the function to provide example output.
+precision(data)
 ```
 
 
