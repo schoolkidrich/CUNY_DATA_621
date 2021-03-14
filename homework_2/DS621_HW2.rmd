@@ -25,6 +25,22 @@ library(caret)
 data_raw <- read.csv("https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_2/classification-output-data.csv")
 ```
 
+
+### Overview
+
+In this homework assignment, you will work through various classification metrics. You will be asked to create functions in R to carry out the various calculations. You will also investigate some functions in packages that will let you obtain the equivalent results. Finally, you will create graphical output that also can be used to evaluate the output of classification models, such as binary logistic regression.
+
+The data set has three key columns we will use:
+
+- **class:** the actual class for the observation.
+
+- **scored.class:** the predicted class for the observation (based on a threshold of 0.5)
+
+- **scored.probability:** the predicted probability of success for the observation
+
+Use the table() function to get the raw confusion matrix for this scored dataset. Make sure you understand the output. In particular, do the rows represent the actual or predicted class? The columns?
+
+
 ```{r, rawConfusionMatrixTable}
 # For the confusion matrix, we are only interested in the class and scored.class variables,
 # so we select only these variables and ignore the rest.
