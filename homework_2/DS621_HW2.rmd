@@ -56,7 +56,7 @@ dplyr::rename(confusion_matrix_table, Predicted = scored.class, Actual = class) 
          Actual = recode(Actual,
                         '0' = 'Negative',
                         '1' = 'Positive')) %>%
-  table()
+    table()
 ```
 
 
