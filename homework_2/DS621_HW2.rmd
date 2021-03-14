@@ -2,12 +2,13 @@
 title: "HW 2"
 author: "Group 2"
 date: "3/10/2021"
-output: 
+output:
+  html_document:
+    df_print: paged
+    toc: yes
   pdf_document:
-    toc: TRUE
-    toc_levels: TRUE
-    
-
+    toc: yes
+    toc_levels: yes
 ---
 
 ```{r setup, include=FALSE}
@@ -62,56 +63,92 @@ dplyr::rename(confusion_matrix_table, Predicted = scored.class, Actual = class) 
 
 ## Functions
 
-```{}
-```
-
 ### Accuracy
-```{r}
 
-accuracy <- function(){
+_Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the accuracy of the_ _predictions_.
+
+$$Accuracy = \frac{TP + TN}{TP + FP + TN + FN}$$
+
+```{r, accuracyFunction}
+accuracy <- function() {
 
 }
-
-accuracy()
-
 ```
+
+
 ### Classification Error Rate
-```{r}
 
-class_error_rate <- function(){
-  
+_Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the classification error rate of the predictions_.
+
+$$Classification Error Rate = \frac{FP + FN}{TP + FP + TN + FN}$$
+
+```{r, classificationErrorRateFunction}
+class_error_rate <- function() {
+
 }
-
 ```
+
+
 ### Precision
-```{r}
 
-precision <- function(){
+_Write a function that takes the data set as a dataframe, with actual and predicted classifications identified_,
+_and returns the precision of the predictions_.
+
+$$Precision = \frac{TP}{TP + FP}$$
+
+
+```{r, predictionPrecisionFunction}
+precision <- function() {
   
 }
-
 ```
+
+
 ### Sensitivty
-```{r}
+
+_Write a function that takes the data set as a dataframe, with actual and predicted classifications identified_,
+_and returns the sensitivity of the predictions. Sensitivity is also known as recall_.
+
+$$Sensitivity = \frac{TP}{TP + FN}$$
+
+```{r, sensitivityFunction}
 #note: there is a built in function in package caret called sensitivity
-sensitivity <- function(){
+sensitivity <- function() {
   
 } 
 ```
+
+
 ### Specificity
-```{r}
+
+_Write a function that takes the data set as a dataframe, with actual and predicted classifications identified_,
+_and returns the specificity of the predictions_.
+
+$$Specificity = \frac{TP}{TN + FP}$$
+
+```{r, specificityFunction}
 
 specificity <- function(){
   
 }
 ```
-### FI Score
-```{r}
-#should be based on the previous functions, so something like the below...
+
+
+### F1 Score
+
+_Write a function that takes the data set as a dataframe, with actual and predicted classifications identified,_
+_and returns the F1 score of the predictions._
+
+$$F1 Score = \frac{2 \times Precision \times Sensitivity }{Precision + Sensitvity}$$
+
+```{r, f1ScoreFunction}
+# Should be based on the previous functions, so something like the below...
 fi_score <- function(x){
   2*sensitivity(x)*precision(x)/(precision(x) + sensitivity(x))
 }
 ```
+
+
 ###
 
 You can also embed plots, for example:
