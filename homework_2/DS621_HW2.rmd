@@ -23,9 +23,24 @@ library(caret)
 
 ```{r load-data}
 data_raw <- read.csv("https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_2/classification-output-data.csv")
+```
 
-table(data_raw) #this doesn't work? anyone know why?
+```{r, rawConfusionMatrixTable}
+# For the confusion matrix, we are only interested in the class and scored.class variables,
+# so we select only these variables and ignre the rest.
+confusion_matrix_table <- data_raw %>% 
+  select(class, scored.class)
 
+# For readability purposes, rename 'scored.class' to Predicted, and 'class' to Actual.
+dplyr::rename(confusion_matrix_table, Predicted = scored.class, Actual = class) %>%
+    # Convert numeric boolean values to human readable values.
+    mutate(Predicted = recode(Predicted,
+                               '0' = 'Negative', 
+                               '1' = 'Positive'),
+         Actual = recode(Actual,
+                        '0' = 'Negative', 
+                        '1' = 'Positive')) %>%
+  table()
 ```
 
 
