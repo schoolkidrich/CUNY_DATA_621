@@ -1,5 +1,6 @@
 ---
-title: "HW 2"
+title: "Homework 2"
+subtitle: "Classification Metrics"
 author: "Group 2"
 date: "3/10/2021"
 output:
@@ -11,23 +12,19 @@ output:
     toc_levels: yes
 ---
 
+**Group 2 members:** _Alice Friedman, Diego Correa, Jagdish Chhabria, Orli Khaimova, Richard Zheng, Stephen Haslett_.
+
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+# Load required libraries.
 library(tidyverse)
 library(caret)
-
-```
-
-##Setup
-
-
-```{r load-data}
-data_raw <- read.csv("https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_2/classification-output-data.csv")
+library(pROC)
 ```
 
 
-### Overview
+## Assignment Overview
 
 In this homework assignment, you will work through various classification metrics. You will be asked to create functions in R to carry out the various calculations. You will also investigate some functions in packages that will let you obtain the equivalent results. Finally, you will create graphical output that also can be used to evaluate the output of classification models, such as binary logistic regression.
 
@@ -39,8 +36,19 @@ The data set has three key columns we will use:
 
 - **scored.probability:** the predicted probability of success for the observation
 
-Use the table() function to get the raw confusion matrix for this scored dataset. Make sure you understand the output. In particular, do the rows represent the actual or predicted class? The columns?
 
+### Task 1
+
+_Download the classification output data set_.
+
+```{r load-data}
+data_raw <- read.csv("https://raw.githubusercontent.com/Jagdish16/CUNY_DATA_621/main/homework_2/classification-output-data.csv")
+```
+
+
+### Task 2
+
+_Use the table() function to get the raw confusion matrix for this scored dataset. Make sure you understand the output. In particular, do the rows represent the actual or predicted class? The columns?_
 
 ```{r, rawConfusionMatrixTable}
 # For the confusion matrix, we are only interested in the class and scored.class variables,
@@ -70,7 +78,7 @@ data <- data_raw %>%
   select(class, scored.class)
 ```
 
-### Accuracy
+### Task 3: Accuracy Function
 
 _Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the accuracy of the_ _predictions_.
 
@@ -83,7 +91,7 @@ accuracy <- function() {
 ```
 
 
-### Classification Error Rate
+### Task 4: Classification Error Rate Function
 
 _Write a function that takes the data set as a dataframe, with actual and predicted classifications identified, and returns the classification error rate of the predictions_.
 
@@ -96,7 +104,7 @@ class_error_rate <- function() {
 ```
 
 
-### Precision
+### Task 5: Precision Function
 
 _Write a function that takes the data set as a dataframe, with actual and predicted classifications identified_,
 _and returns the precision of the predictions_.
@@ -131,7 +139,7 @@ precision(data)
 ```
 
 
-### Sensitivty
+### Task 6: Sensitivity Function
 
 _Write a function that takes the data set as a dataframe, with actual and predicted classifications identified_,
 _and returns the sensitivity of the predictions. Sensitivity is also known as recall_.
@@ -146,7 +154,7 @@ sensitivity <- function() {
 ```
 
 
-### Specificity
+### Task 7: Specificity Function
 
 _Write a function that takes the data set as a dataframe, with actual and predicted classifications identified_,
 _and returns the specificity of the predictions_.
@@ -161,7 +169,7 @@ specificity <- function(){
 ```
 
 
-### F1 Score
+### Task 8: F1 Score Function
 
 _Write a function that takes the data set as a dataframe, with actual and predicted classifications identified,_
 _and returns the F1 score of the predictions._
@@ -176,12 +184,32 @@ fi_score <- function(x){
 ```
 
 
-###
+### Task 9
 
-You can also embed plots, for example:
+_What are the bounds on the F1 score? Show that the F1 score will always be between 0 and 1_.
 
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### Task 10
+
+_Write a function that generates an ROC curve from a data set with a true classification column (class in our_
+_example) and a probability column (scored.probability in our example). Your function should return a list_
+_that includes the plot of the ROC curve and a vector that contains the calculated area under the curve_
+_(AUC). Note that I recommend using a sequence of thresholds ranging from 0 to 1 at 0.01 intervals_.
+
+
+### Task 11
+
+_Use your **created R functions** and the provided classification output data set to produce all of the_
+_classification metrics discussed above_.
+
+
+### Task 12
+
+_Investigate the **caret** package. In particular, consider the functions confusionMatrix, sensitivity, and_
+_specificity. Apply the functions to the data set. How do the results compare with your own functions_?
+
+
+### Task 13
+
+_Investigate the **pROC** package. Use it to generate an ROC curve for the data set. How do the results_
+_compare with your own functions_?
