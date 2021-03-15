@@ -16,7 +16,6 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-
 # Load required libraries.
 library(tidyverse)
 library(caret)
@@ -55,7 +54,6 @@ _Use the table() function to get the raw confusion matrix for this scored datase
 # so we select only these variables and ignore the rest.
 confusion_matrix_table <- data_raw %>%
   select(class, scored.class)
-
 # For readability purposes, rename 'scored.class' to Predicted, and 'class' to Actual.
 dplyr::rename(confusion_matrix_table, Predicted = scored.class, Actual = class) %>%
     # Convert numeric boolean values to human readable values.
@@ -86,7 +84,6 @@ $$Accuracy = \frac{TP + TN}{TP + FP + TN + FN}$$
 
 ```{r, accuracyFunction}
 accuracy <- function() {
-
 }
 ```
 
@@ -98,9 +95,27 @@ _Write a function that takes the data set as a dataframe, with actual and predic
 $$Classification Error Rate = \frac{FP + FN}{TP + FP + TN + FN}$$
 
 ```{r, classificationErrorRateFunction}
-class_error_rate <- function() {
 
+class_error_rate <- function(df,col1,col2) {
+  true = df[,col1]
+  predict = df[,col2]
+  # total events
+  len = length(true)
+  # total false
+  error = 0
+  for (i in seq(len)){
+    if (true[i] != predict[i]){
+      error = error + 1
+    }
+  }
+  # error rate
+  return (error/len)
 }
+
+class_error_rate(data_raw,'class','scored.class')
+
+
+
 ```
 
 
@@ -124,16 +139,12 @@ $$Precision = \frac{TP}{TP + FP}$$
 precision <- function(data) {
   # Calculate the total number of true positives in the dataset.
   true_positive <- sum(data$class == 1 & data$scored.class == 1)
-
   # Calculate the total number of false positives in the dataset.
   false_positive <- sum(data$class == 0 & data$scored.class == 1)
-
   # Perform the precision calculation and round the result to 2 decimal places.
   prediction_precision <- round(true_positive / (true_positive + false_positive), 2)
-
   return(prediction_precision)
 }
-
 # Call the function to provide example output.
 precision(data)
 ```
@@ -162,7 +173,6 @@ _and returns the specificity of the predictions_.
 $$Specificity = \frac{TP}{TN + FP}$$
 
 ```{r, specificityFunction}
-
 specificity <- function(){
   
 }
