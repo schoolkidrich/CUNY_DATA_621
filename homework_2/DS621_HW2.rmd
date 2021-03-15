@@ -20,6 +20,7 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(caret)
 library(pROC)
+
 ```
 
 
@@ -101,7 +102,7 @@ class_error_rate <- function(df,col1,col2) {
   predict = df[,col2]
   # total events
   len = length(true)
-  # total false
+  # total errors
   error = 0
   for (i in seq(len)){
     if (true[i] != predict[i]){
